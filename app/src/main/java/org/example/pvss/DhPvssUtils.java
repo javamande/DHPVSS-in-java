@@ -66,6 +66,7 @@ public class DhPvssUtils {
             BigInteger[] inverseTable, BigInteger[] alphas) {
         BigInteger primeOrder = groupParams.getP();
         BigInteger[] coeffs = new BigInteger[n];
+        System.out.println("===INVERSE TABLE===");
         for (int i = 1; i <= n; i++) {
             BigInteger coeff = BigInteger.ONE;
             for (int j = from; j <= n; j++) {
@@ -85,6 +86,7 @@ public class DhPvssUtils {
             }
             coeffs[i - 1] = coeff;
         }
+        System.out.println(" ");
         return coeffs;
     }
 
@@ -122,7 +124,7 @@ public class DhPvssUtils {
      * Sets up the DhPvssContext with finite-field parameters according to the
      * DHPVSS public parameters:
      * pp = (G, G, p, t, n, α₀, {(αᵢ, vᵢ) : i ∈ [n]}).
-     * In our finite-field implementation, all arithmetic is done modulo p.
+     * In finite-field implementation, all arithmetic is done modulo p.
      *
      * @param ctx         the DhPvssContext to populate.
      * @param groupParams the prime order/Modolus and the generator of the cyclic

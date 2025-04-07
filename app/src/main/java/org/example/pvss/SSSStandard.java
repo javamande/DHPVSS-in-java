@@ -2,7 +2,6 @@ package org.example.pvss;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.util.Arrays;
 
 public class SSSStandard {
 
@@ -120,65 +119,4 @@ public class SSSStandard {
         return S_reconstructed;
     }
 
-    public static void main(String[] args) {
-        // --- Step 1: Set up the basic parameters ---
-        // For testing purposes, we use a small prime p.
-        int pBitLength = 32;
-        SecureRandom random = new SecureRandom();
-        BigInteger p = BigInteger.probablePrime(pBitLength, random);
-        System.out.println("Prime modulus p = " + p);
-
-        // Choose a generator G.
-        // In a real system, G is a generator of a large cyclic subgroup of Zₚ.
-        BigInteger G = new BigInteger("5"); // example generator
-        System.out.println("Group generator G = " + G);
-
-        // --- Step 2: Define evaluation points ---
-        // We use α₀, α₁, …, αₙ where we set α₀ = 0 (the designated reference point)
-        // and then α₁, …, αₙ = 1, 2, …, n.
-        int n = 5; // number of participants
-        int t = 2; // threshold; polynomial degree is t, so we need t+1 shares for reconstruction.
-        BigInteger[] alphas = new BigInteger[n + 1];
-        for (int i = 0; i <= n; i++) {
-            alphas[i] = BigInteger.valueOf(i);
-        }
-
-        // For standard Shamir secret sharing, dual-code coefficients are not used;
-        // we can supply dummy values.
-        BigInteger[] dummyVs = new BigInteger[n];
-        Arrays.fill(dummyVs, BigInteger.ONE);
-
-        // --- Step 3: Construct the PVSS context ---
-        DhPvssContext ctx = new DhPvssContext(new GroupGenerator.GroupParameters(p, G), t, n, alphas[0], alphas,
-                dummyVs);
-        System.out.println("Evaluation points (alphas): " + Arrays.toString(alphas));
-
-        // --- Step 4: Encode the secret ---
-        // Let the raw secret be 7. In the additive (group) notation, we encode the
-        // secret as S = 7·G mod p.
-        BigInteger rawSecret = BigInteger.valueOf(7);
-        BigInteger secret = G.multiply(rawSecret).mod(p);
-        System.out.println("Original secret (group element S) = " + secret);
-
-        // --- Step 5: Generate shares ---
-        // Using the polynomial m(X) = S + a₁*X + a₂*X², where m(0)=S.
-        BigInteger[] shares = generateSharesStandard(ctx, secret);
-        System.out.println("Generated shares:");
-        for (int i = 0; i < shares.length; i++) {
-            System.out.println("  Share for participant " + (i + 1) + ": " + shares[i]);
-        }
-
-        // --- Step 6: Reconstruct the secret ---
-        // We need t+1 shares. Let's use shares for participants 1, 2, and 3.
-        int[] indices = { 1, 2, 3 };
-        BigInteger reconstructed = reconstructSecretStandard(ctx, Arrays.copyOfRange(shares, 0, 3), indices);
-        System.out.println("Reconstructed secret = " + reconstructed);
-
-        // --- Step 7: Test result ---
-        if (secret.equals(reconstructed)) {
-            System.out.println("Test Passed: Secret correctly reconstructed.");
-        } else {
-            System.out.println("Test Failed: Reconstructed secret does not match original.");
-        }
-    }
 }

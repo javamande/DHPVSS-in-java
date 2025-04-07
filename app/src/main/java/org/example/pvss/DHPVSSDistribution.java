@@ -25,19 +25,19 @@ public class DHPVSSDistribution {
             return proof;
         }
 
-        @Override
-        public String toString() {
-            StringBuilder sb = new StringBuilder();
-            sb.append("DistributionResult{\n");
-            sb.append("  encryptedShares: [\n");
-            for (BigInteger share : encryptedShares) {
-                sb.append("    ").append(share).append("\n");
-            }
-            sb.append("  ],\n");
-            sb.append("  proof: ").append(proof).append("\n");
-            sb.append("}");
-            return sb.toString();
-        }
+        // @Override
+        // public String toString() {
+        // StringBuilder sb = new StringBuilder();
+        // sb.append("DistributionResult{\n");
+        // sb.append(" encryptedShares: [\n");
+        // for (BigInteger share : encryptedShares) {
+        // sb.append(" ").append(share).append("\n");
+        // }
+        // sb.append(" ],\n");
+        // sb.append(" proof: ").append(proof).append("\n");
+        // sb.append("}");
+        // return sb.toString();
+        // }
     }
 
     /**
@@ -155,13 +155,14 @@ public class DHPVSSDistribution {
             System.out.println("For participant " + (i + 1) + ":");
             System.out.println("  comKey^scrapeTerm = " + comKeys[i].modPow(scrapeTerms[i], p));
             System.out.println("  encryptedShare^scrapeTerm = " + encryptedShares[i].modPow(scrapeTerms[i], p));
-
+            System.out.println(" ");
         }
-        System.out.println("=== Distribution Prove Debug ===");
+        System.out.println("=== Distribution Debug ===");
         System.out.println("Computed weighted sum U: " + U);
         BigInteger expectedV = U.modPow(distKey.getSecretKey(), p);
         System.out.println("Expected V (U^(dealerSecret) mod p): " + expectedV);
         System.out.println("Computed V: " + V);
+        System.out.println(" ");
 
         // 6. Generate the DLEQ proof.
         // The DLEQ proof will demonstrate that the same dealer secret sk_D was used to

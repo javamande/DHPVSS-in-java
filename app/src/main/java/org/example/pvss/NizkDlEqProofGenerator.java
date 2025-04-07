@@ -132,7 +132,7 @@ public class NizkDlEqProofGenerator {
         // Step 5: Compute the response: z = w - e * α mod q.
         BigInteger z = w.subtract(e.multiply(alpha)).mod(q);
         System.out.println("  Response z: " + z);
-
+        System.err.println(" ");
         return new NizkDlEqProof(e, z);
     }
 

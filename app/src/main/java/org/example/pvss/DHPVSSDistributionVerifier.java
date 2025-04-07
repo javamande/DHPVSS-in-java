@@ -35,7 +35,6 @@ public class DHPVSSDistributionVerifier {
         BigInteger[] polyCoeffs = HashingTools.hashPointsToPoly(pubDist, comKeys, encryptedShares, numPolyCoeffs, p);
         System.out.println("Polynomial coefficients:");
         for (int i = 0; i < polyCoeffs.length; i++) {
-            System.out.println("  Coefficient[" + i + "] = " + polyCoeffs[i]);
         }
 
         // Step 2: Generate scrape sum terms.
@@ -51,13 +50,9 @@ public class DHPVSSDistributionVerifier {
                 BigInteger term = alpha_i.modPow(BigInteger.valueOf(j), p)
                         .multiply(polyCoeffs[j]).mod(p);
                 polyEval = polyEval.add(term).mod(p);
-                System.out.println("  α^" + j + " * polyCoeff[" + j + "] = " + term);
             }
-            System.out.println("  Polynomial evaluation = " + polyEval);
             scrapeTerms[i] = vs[i].multiply(polyEval).mod(p);
-            System.out.println("  Scrape term = vs[" + i + "] * polyEval = " + scrapeTerms[i]);
         }
-        System.out.println("Scrape terms: " + Arrays.toString(scrapeTerms));
 
         // Step 3: Compute weighted sums U and V.
         BigInteger U = BigInteger.ONE;
@@ -67,9 +62,6 @@ public class DHPVSSDistributionVerifier {
             // scrape term.
             BigInteger termU = comKeys[i].modPow(scrapeTerms[i], p);
             BigInteger termV = encryptedShares[i].modPow(scrapeTerms[i], p);
-            System.out.println("For participant " + (i + 1) + ":");
-            System.out.println("  comKey^scrapeTerm = " + termU);
-            System.out.println("  encryptedShare^scrapeTerm = " + termV);
             U = U.multiply(termU).mod(p);
             V = V.multiply(termV).mod(p);
 
@@ -80,7 +72,7 @@ public class DHPVSSDistributionVerifier {
         BigInteger expectedV = U.modPow(dealerSecret, p);
         System.out.println("Expected V (U^(dealerSecret) mod p): " + expectedV);
         System.out.println("Computed V: " + V);
-
+        System.out.println(" ");
         // Step 4: Verify the DLEQ proof.
         boolean valid = NizkDlEqProofGenerator.verifyProof(ctx, U, pubDist, V, proof);
         System.out.println("DLEQ proof verification result: " + valid);
