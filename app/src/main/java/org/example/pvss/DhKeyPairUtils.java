@@ -7,7 +7,6 @@ public class DhKeyPairUtils {
     private static SecureRandom random = new SecureRandom();
 
     /**
-     * Generates a basic finite-field keypair using the given group parameters.
      *
      * @param group the group parameters (p, g, subgroup order)
      * @return a DhKeyPair

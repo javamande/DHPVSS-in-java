@@ -4,102 +4,91 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import org.bouncycastle.math.ec.ECPoint;
+
 public class HashingTools {
-    private static final String HASH_ALGORITHM = "SHA-256";
-    private static final byte SENTINEL = (byte) 0xac;
 
     /**
-     * Returns a new MessageDigest instance for SHA-256.
+     * Hashes a single ECPoint using its compressed encoding.
+     * 
+     * @param point the ECPoint to hash
+     * @return a BigInteger representing the hash (interpreted as positive)
      */
-    public static MessageDigest getDigest() {
+    public static BigInteger hashECPoint(ECPoint point) {
         try {
-            return MessageDigest.getInstance(HASH_ALGORITHM);
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] encoded = point.getEncoded(true); // use compressed encoding
+            digest.update(encoded);
+            byte[] hashBytes = digest.digest();
+            return new BigInteger(1, hashBytes);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("SHA-256 algorithm not available", e);
         }
     }
 
     /**
-     * Updates the provided MessageDigest with the byte representation of the
-     * BigInteger,
-     * followed by a sentinel byte.
-     *
-     * @param digest the MessageDigest to update
-     * @param bn     the BigInteger to hash
+     * Hashes an array of ECPoints by concatenating their compressed encodings.
+     * 
+     * @param points an array of ECPoints to hash
+     * @return a BigInteger representing the hash of all points (interpreted as
+     *         positive)
      */
-    public static void updateDigestWithBigInteger(MessageDigest digest, BigInteger bn) {
-        // Get the byte representation of bn.
-        byte[] bnBytes = bn.toByteArray();
-        // Update digest with bn bytes.
-        digest.update(bnBytes);
-        // Append a sentinel byte to detect boundary issues.
-        digest.update(new byte[] { SENTINEL });
+    public static BigInteger hashECPoints(ECPoint... points) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            for (ECPoint point : points) {
+                byte[] encoded = point.getEncoded(true);
+                digest.update(encoded);
+            }
+            byte[] hashBytes = digest.digest();
+            return new BigInteger(1, hashBytes);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not available", e);
+        }
     }
 
-    public static BigInteger[] hashPointsToPoly(BigInteger dealerPub,
-            BigInteger[] comKeys,
-            BigInteger[] encryptedShares,
+    /**
+     * Computes a hash-based polynomial from elliptic curve points.
+     * 
+     * This function takes as input:
+     * <ul>
+     * <li>the dealer’s public key (an ECPoint),</li>
+     * <li>an array of commitment keys (ECPoints), and</li>
+     * <li>an array of encrypted shares (ECPoints).</li>
+     * </ul>
+     * It then computes a hash digest for each group, combines them, and
+     * “hash-chains” the result to produce
+     * an array of coefficients (of length numPolyCoeffs) in Z_modulus.
+     * 
+     * @param dealerPub       the dealer’s public key as an ECPoint.
+     * @param comKeys         the array of commitment keys (ECPoints).
+     * @param encryptedShares the array of encrypted shares (ECPoints).
+     * @param numPolyCoeffs   the number of polynomial coefficients to generate.
+     * @param modulus         the modulus p (as a BigInteger) for reduction.
+     * @return an array of BigInteger representing the polynomial coefficients.
+     */
+    public static BigInteger[] hashPointsToPoly(ECPoint dealerPub,
+            ECPoint[] comKeys,
+            ECPoint[] encryptedShares,
             int numPolyCoeffs,
             BigInteger modulus) {
-        // List 1: a singleton [dealerPub]
-        BigInteger listDigest1 = hashBigIntegers(dealerPub);
-        // List 2: hash over the array comKeys
-        BigInteger listDigest2 = hashBigIntegers(comKeys);
-        // List 3: hash over the array encryptedShares
-        BigInteger listDigest3 = hashBigIntegers(encryptedShares);
+        // Step 1: Compute a digest for each group.
+        BigInteger listDigest1 = hashECPoint(dealerPub);
+        BigInteger listDigest2 = hashECPoints(comKeys);
+        BigInteger listDigest3 = hashECPoints(encryptedShares);
 
-        // Combine the three digests by hashing them together.
-        BigInteger initialCoeff = hashBigIntegers(listDigest1, listDigest2, listDigest3).mod(modulus);
+        // Step 2: Combine the digests by hashing them together.
+        BigInteger initialCoeff = Hash.hashBigIntegers(listDigest1, listDigest2, listDigest3).mod(modulus);
 
+        // Step 3: Build the hash chain for the remaining coefficients.
         BigInteger[] polyCoeffs = new BigInteger[numPolyCoeffs];
         polyCoeffs[0] = initialCoeff;
-
-        // Build a hash chain for the remaining coefficients.
         for (int i = 1; i < numPolyCoeffs; i++) {
-            polyCoeffs[i] = hashBigInteger(polyCoeffs[i - 1]).mod(modulus);
+            polyCoeffs[i] = Hash.hashBigIntegers(polyCoeffs[i - 1]).mod(modulus);
         }
-
         return polyCoeffs;
     }
 
-    /**
-     * Computes a SHA-256 hash over the BigInteger.
-     *
-     * @param bn the BigInteger to hash
-     * @return the resulting hash as a positive BigInteger
-     */
-    public static BigInteger hashBigInteger(BigInteger bn) {
-        MessageDigest digest = getDigest();
-        updateDigestWithBigInteger(digest, bn);
-        byte[] hash = digest.digest();
-        return new BigInteger(1, hash);
-    }
-
-    /**
-     * Computes a SHA-256 hash over multiple BigIntegers.
-     *
-     * @param bns an array of BigIntegers to hash
-     * @return the resulting hash as a positive BigInteger
-     */
-    public static BigInteger hashBigIntegers(BigInteger... bns) {
-        MessageDigest digest = getDigest();
-        for (BigInteger bn : bns) {
-            updateDigestWithBigInteger(digest, bn);
-        }
-        byte[] hash = digest.digest();
-        return new BigInteger(1, hash);
-    }
-
-    /**
-     * Computes a SHA-256 hash over the provided byte array.
-     *
-     * @param data the data to hash
-     * @return the resulting hash as a positive BigInteger
-     */
-    public static BigInteger hashBytes(byte[] data) {
-        MessageDigest digest = getDigest();
-        digest.update(data);
-        byte[] hash = digest.digest();
-        return new BigInteger(1, hash);
-    }
+    // You already have hashBigInteger and hashBigIntegers methods defined elsewhere
+    // in your code.
 }

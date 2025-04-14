@@ -6,7 +6,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
+import org.bouncycastle.math.ec.ECPoint;
 import org.junit.Test;
 
 public class DhPvssContextTest {
@@ -18,7 +20,7 @@ public class DhPvssContextTest {
         int n = 5; // number of participants
 
         // Generate finite-field group parameters.
-        GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup(lambda);
+        GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
         assertNotNull("Group parameters should not be null", groupParams);
 
         // Create evaluation points α₀, α₁, …, αₙ (using consecutive integers for
@@ -35,7 +37,7 @@ public class DhPvssContextTest {
         }
 
         // Create the PVSS context.
-        DhPvssContext ctx = new DhPvssContext(groupParams, t, n, alphas[0], alphas, v);
+        DhPvssContext ctx = new DhPvssContext(groupParams, t, n, alphas, v);
         assertNotNull("PVSS context should not be null", ctx);
 
         // Verify that the group parameters in the context are as expected.
@@ -69,7 +71,7 @@ public class DhPvssContextTest {
         int t = 2;
         int n = 5;
 
-        GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup(lambda);
+        GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
 
         BigInteger[] alphas = new BigInteger[n + 1];
         for (int i = 0; i <= n; i++) {
@@ -81,15 +83,15 @@ public class DhPvssContextTest {
             v[i] = BigInteger.ONE;
         }
 
-        DhPvssContext ctx = new DhPvssContext(groupParams, t, n, alphas[0], alphas, v);
-
+        DhPvssContext ctx = new DhPvssContext(groupParams, t, n, alphas, v);
+        SecureRandom random = new SecureRandom();
         BigInteger secret = BigInteger.valueOf(13);
-        BigInteger pub = groupParams.getG().modPow(secret, groupParams.getP());
+        ECPoint pub = groupParams.getG().multiply(secret);
         DhKeyPair keyPair = new DhKeyPair(secret, pub);
 
         NizkDlProof proof = NizkDlProofGenerator.generateProof(ctx, keyPair);
 
-        boolean valid = NizkDlProofGenerator.verifyProof(ctx, pub, proof);
+        boolean valid = NizkDLProofVerificator.verifyProof(ctx, pub, proof);
 
         assertTrue("Valid DL proof should verify even with dummy dual-code coefficients", valid);
     }

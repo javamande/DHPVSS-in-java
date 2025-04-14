@@ -12,23 +12,26 @@ import org.junit.Test;
 public class DHPVSSDistributionVerificationTest {
     @Test
     public void testDistributionVerification() throws NoSuchAlgorithmException {
-        int lambda = 10; // 128-bit security parameter for a larger prime
-        int t = 2; // threshold
-        int n = 5; // number of participants
-
-        DhPvssContext ctx = createContext(lambda, t, n);
-        BigInteger p = ctx.getOrder();
-        SecureRandom rnd = new SecureRandom();
-
-        // Generate dummy commitment keys.
-        BigInteger[] comKeys = new BigInteger[n];
-        for (int i = 0; i < n; i++) {
-            BigInteger key;
+         int maxPartipants = 15;
+        for (int i = 1; i <= 10; i++) { // run 10 test with random values of t and n, but always with the property n - t
+                                        // - 2 <= 0.
+            int t;
+            int n;
             do {
-                key = new BigInteger(p.bitLength(), rnd);
-            } while (key.compareTo(BigInteger.ZERO) == 0 || key.compareTo(p) >= 0);
-            comKeys[i] = key;
-        }
+                n = (int) (Math.random() * maxPartipants);
+                t = (int) (Math.random());
+            } while ((n - t - 2) <= 0);
+
+            for (int j = 1; j <= 10; j++) {
+                if (i == j) {
+                    // Generate group parameters (using secp256r1).
+                    GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
+
+                    // Call the actual setup function. It internally generates evaluation points
+                    // (alphas)
+                    // as 0, 1, ..., n and computes dual-code coefficients (v) from the inverse
+                    // table.
+                    DhPvssContext ctx = DhPvssUtils.dhPvssSetup(groupParams, t, n);
 
         // Create dealer's key pair.
         BigInteger dealerSecret = BigInteger.valueOf(13);
@@ -64,7 +67,7 @@ public class DHPVSSDistributionVerificationTest {
         for (int i = 0; i < n; i++) {
             v[i] = BigInteger.ONE;
         }
-        return new DhPvssContext(groupParams, t, n, alphas[0], alphas, v);
+        return new DhPvssContext(groupParams, t, n, alphas, v);
     }
 
     /**

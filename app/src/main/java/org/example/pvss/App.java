@@ -4,6 +4,8 @@ import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
+import org.bouncycastle.math.ec.ECPoint;
+
 public class App {
     public static void main(String[] args) throws Exception {
 
@@ -12,7 +14,7 @@ public class App {
         int n = 10;
         // Generate group parameters (safe prime p and subgroup generator G) and create
         // the PVSS context.
-        GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup(lambda);
+        GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
         // Using helper that calls dhPvssSetup, which computes evaluation points
         // (alphas) and dual-code coefficients (v).
         DhPvssContext ctx = DhPvssUtils.dhPvssSetup(groupParams, t, n);
@@ -30,7 +32,7 @@ public class App {
         // For testing, we set a fixed dealer secret.
         BigInteger dealerSecret = BigInteger.valueOf(13);
         // Compute the dealer's public key: pk = G^(dealerSecret) mod p.
-        BigInteger dealerPub = ctx.getGenerator().modPow(dealerSecret, ctx.getOrder());
+        ECPoint dealerPub = ctx.getGenerator().modPow(dealerSecret, ctx.getOrder());
         DhKeyPair dealerKeyPair = new DhKeyPair(dealerSecret, dealerPub);
         System.out.println("Dealer Key Pair:");
         System.out.println("  Secret: " + dealerSecret);
@@ -43,13 +45,13 @@ public class App {
         // Define a secret S to be shared. In the multiplicative setting,
         // we encode S as S = G^(s) mod p, where s is a secret scalar.
         BigInteger secretScalar = BigInteger.valueOf(7);
-        BigInteger S = ctx.getGenerator().modPow(secretScalar, ctx.getOrder());
+        ECPoint S = ctx.getGenerator().multiply(secretScalar);
         System.out.println("Secret S (to be shared): " + S);
         System.out.println();
 
         // Generate shares using SSS implementation (here, SSSStandard generates
         // shares as evaluations of m(X)=S + a1*X + ... + a_t*X^t).
-        BigInteger[] shares = SSSStandard.generateSharesStandard(ctx, S);
+        ECPoint[] shares = SSS_EC.generateSharesEC(ctx, S);
         System.out.println("Generated Shares:");
         for (int i = 0; i < shares.length; i++) {
             System.out.println("  Share for participant " + (i + 1) + ": " + shares[i]);
@@ -80,7 +82,7 @@ public class App {
         // In the multiplicative setting, the encrypted share for participant i is
         // computed as:
         // C_i = A_i * (comKey[i])^(dealerSecret) mod p.
-        DHPVSSDistribution.DistributionResult distResult = DHPVSSDistribution.dhPvssDistributeProve(ctx, comKeys,
+        DHPVSS_Dist.DistributionResult distResult = DHPVSS_Dist.distribute(ctx, comKeys,
                 dealerKeyPair, S);
 
         // -----------------------------
@@ -102,12 +104,12 @@ public class App {
         // For reconstruction, choose t+1 shares. Here we simply take the first t+1
         // shares.
         int[] indices = new int[t + 1];
-        BigInteger[] selectedShares = new BigInteger[t + 1];
+        ECPoint[] selectedShares = new ECPoint[t + 1];
         for (int i = 0; i < t + 1; i++) {
             indices[i] = i + 1; // Participant indices 1,...,t+1.
             selectedShares[i] = shares[i];
         }
-        BigInteger reconstructed = SSSStandard.reconstructSecretStandard(ctx, selectedShares, indices);
+        ECPoint reconstructed = SSS_EC.reconstructSecretEC(ctx, selectedShares, indices);
         System.out.println("Reconstructed Secret S: " + reconstructed);
         System.out.println("Original Secret S:      " + S);
     }
