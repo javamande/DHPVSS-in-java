@@ -38,10 +38,10 @@ public class DLProofTest1 {
                     DhKeyPair keyPair = DhKeyPair.generate(ctx, random);
 
                     // Generate the DL proof using the generated key pair.
-                    NizkDlProof proof = NizkDlProofGenerator.generateProof(ctx, keyPair);
+                    NizkDlProof proof = NizkDlProof.generateProof(ctx, keyPair);
 
                     // Verify the proof using the public key from the key pair.
-                    boolean valid = NizkDLProofVerificator.verifyProof(ctx, keyPair.getPublic(), proof);
+                    boolean valid = NizkDlProof.verifyProof(ctx, keyPair.getPublic(), proof);
 
                     // Debug output (if desired):
                     System.out.println("DL proof verification passed: " + valid + " for " + i + " of 10");

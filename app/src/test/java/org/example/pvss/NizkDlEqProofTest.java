@@ -29,7 +29,7 @@ public class NizkDlEqProofTest {
 
                     GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
 
-                    DhPvssContext ctx = DhPvssUtils.dhPvssSetup(groupParams, t, n);
+                    DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
 
                     SecureRandom random = new SecureRandom();
                     DistributionInput distInput = DistributionInputGenerator.generateDistributionInput(ctx, random);
@@ -55,7 +55,7 @@ public class NizkDlEqProofTest {
                         comKeys[k] = participantKeyPairs[i].getPublicKey();
                     }
 
-                    ECPoint[] encryptedShares = SSS_EC.generateSharesEC(ctx, S);
+                    ECPoint[] encryptedShares = GShamir_Share.generateSharesEC(ctx, S);
 
                     BigInteger modulus = ctx.getOrder();
 
@@ -78,9 +78,9 @@ public class NizkDlEqProofTest {
 
                     // Generate the DLEQ proof that proves the relation:
                     // pk_D = [skD]G and V = [skD]U.
-                    NizkDlEqProof proof = NizkDlEqProofGenerator.generateProof(ctx, U, pkD, V, skD);
+                    NizkDlEqProof proof = NizkDlEqProof.generateProof(ctx, U, pkD, V, skD);
                     // Verify the proof.
-                    boolean valid = NizkDleqProofVerificator.verifyProof(ctx, U, pkD, V, proof);
+                    boolean valid = NizkDlEqProof.verifyProof(ctx, U, pkD, V, proof);
                     System.out.println("DLEQ proof valid: " + valid + " " + i + " of 10 completed tests");
                     assertTrue("DLEQ proof should verify", valid);
 

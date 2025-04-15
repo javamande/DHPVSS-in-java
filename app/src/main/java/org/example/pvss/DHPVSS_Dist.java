@@ -229,7 +229,7 @@ public class DHPVSS_Dist {
         // Step 1: Generate Shamir shares.
         // Aᵢ = S + m(αᵢ)*G, with m(α₀)=0.
         // We assume that SSS_EC.generateSharesEC implements this.
-        ECPoint[] shares = SSS_EC.generateSharesEC(ctx, S);
+        ECPoint[] shares = GShamir_Share.generateSharesEC(ctx, S);
 
         // Step 2: Encrypt shares with the dealer's secret key.
         // For each participant i, compute:
@@ -279,7 +279,7 @@ public class DHPVSS_Dist {
         System.out.println("Computed weighted aggregate V: " + aggregateV);
 
         // Step 6: Generate a DLEQ proof that shows V = sk_D * U.
-        NizkDlEqProof dleqProof = NizkDlEqProofGenerator.generateProof(
+        NizkDlEqProof dleqProof = NizkDlEqProof.generateProof(
                 ctx,
                 aggregateU, // h in the DLEQ proof (base U)
                 dealerKeyPair.getPublic(), // x = pk_D = sk_D * G
@@ -287,7 +287,7 @@ public class DHPVSS_Dist {
                 dealerKeyPair.getSecretKey()); // dealer’s secret sk_D
 
         // Optionally verify the proof (for debugging).
-        boolean validProof = NizkDleqProofVerificator.verifyProof(
+        boolean validProof = NizkDlEqProof.verifyProof(
                 ctx,
                 aggregateU,
                 dealerKeyPair.getPublic(),

@@ -45,7 +45,7 @@ public class DLEQProofTest {
                     GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
                     // Set up the PVSS context using your helper method.
                     // This call uses your existing DhPvssUtils.dhPvssSetup implementation.
-                    DhPvssContext ctx = DhPvssUtils.dhPvssSetup(groupParams, t, n);
+                    DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
                     // Note: The context now contains the elliptic curve group parameters
                     // (generator,
                     // prime modulus, evaluation points, etc.)
@@ -85,7 +85,7 @@ public class DLEQProofTest {
                         // commitment key:
                         comKeys[k] = participantKeyPairs.get(k).getPublic();
                     }
-                    ECPoint[] encryptedShares = SSS_EC.generateSharesEC(ctx, S);
+                    ECPoint[] encryptedShares = GShamir_Share.generateSharesEC(ctx, S);
 
                     BigInteger modulus = ctx.getGroupParameters().getN();
 
@@ -103,9 +103,9 @@ public class DLEQProofTest {
                     ECPoint V = UV[1];
                     // Generate the DLEQ proof that proves the relation:
                     // pk_D = [skD]G and V = [skD]U.
-                    NizkDlEqProof proof = NizkDlEqProofGenerator.generateProof(ctx, U, pkD, V, skD);
+                    NizkDlEqProof proof = NizkDlEqProof.generateProof(ctx, U, pkD, V, skD);
                     // Verify the proof.
-                    boolean valid = NizkDleqProofVerificator.verifyProof(ctx, U, pkD, V, proof);
+                    boolean valid = NizkDlEqProof.verifyProof(ctx, U, pkD, V, proof);
 
                     System.out.println("DLEQ proof verification result: " + valid + " for " + i + " of 10");
                     // Assert that the proof verifies.

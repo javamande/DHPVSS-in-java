@@ -33,7 +33,7 @@ public class DhKeyPairGenerationTest {
 
                     // Generate group parameters from the GroupGenerator (using secp256r1).
                     GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
-                    DhPvssContext ctx = DhPvssUtils.dhPvssSetup(groupParams, t, n);
+                    DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
 
                     // Check that the context is non-null.
                     assertNotNull("PVSS context should not be null", ctx);

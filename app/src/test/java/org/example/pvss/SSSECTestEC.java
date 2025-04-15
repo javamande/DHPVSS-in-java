@@ -27,7 +27,7 @@ public class SSSECTestEC {
         // points (alphas)
         // as 0, 1, …, n and calculates dual-code coefficients (vs) from the inverse
         // table.
-        DhPvssContext ctx = DhPvssUtils.dhPvssSetup(groupParams, t, n);
+        DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
 
         assertNotNull("PVSS context should not be null", ctx);
 
@@ -45,7 +45,7 @@ public class SSSECTestEC {
         System.out.println("Dealer secret S (EC point): " + S);
 
         // Generate shares using your EC-based Shamir secret sharing.
-        ECPoint[] shares = SSS_EC.generateSharesEC(ctx, S);
+        ECPoint[] shares = GShamir_Share.generateSharesEC(ctx, S);
         assertNotNull("Shares should not be null", shares);
         System.out.println("Generated Shares:");
         for (int i = 0; i < shares.length; i++) {
@@ -59,7 +59,7 @@ public class SSSECTestEC {
         for (int i = 0; i < indices.length; i++) {
             subsetShares[i] = shares[indices[i] - 1];
         }
-        ECPoint S_reconstructed = SSS_EC.reconstructSecretEC(ctx, subsetShares, indices);
+        ECPoint S_reconstructed = GShamir_Share.reconstructSecretEC(ctx, subsetShares, indices);
         System.out.println("Reconstructed secret S' (EC point): " + S_reconstructed);
 
         // Verify that the reconstructed secret matches the original.
@@ -76,7 +76,7 @@ public class SSSECTestEC {
         int n = 7; // total participants.
         GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
 
-        DhPvssContext ctx = DhPvssUtils.dhPvssSetup(groupParams, t, n);
+        DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
         SecureRandom random = new SecureRandom();
         BigInteger q = ctx.getGroupParameters().getN();
         BigInteger s;
@@ -88,7 +88,7 @@ public class SSSECTestEC {
         System.out.println("Dealer secret scalar s: " + s);
         System.out.println("Dealer secret S (EC point): " + S);
 
-        ECPoint[] shares = SSS_EC.generateSharesEC(ctx, S);
+        ECPoint[] shares = GShamir_Share.generateSharesEC(ctx, S);
         assertNotNull("Shares should not be null", shares);
 
         // Define two different subsets of 4 shares.
@@ -99,14 +99,14 @@ public class SSSECTestEC {
         for (int i = 0; i < indicesSubset1.length; i++) {
             subset1[i] = shares[indicesSubset1[i] - 1];
         }
-        ECPoint reconstructed1 = SSS_EC.reconstructSecretEC(ctx, subset1, indicesSubset1);
+        ECPoint reconstructed1 = GShamir_Share.reconstructSecretEC(ctx, subset1, indicesSubset1);
         System.out.println("Reconstructed secret using subset 1: " + reconstructed1);
 
         ECPoint[] subset2 = new ECPoint[indicesSubset2.length];
         for (int i = 0; i < indicesSubset2.length; i++) {
             subset2[i] = shares[indicesSubset2[i] - 1];
         }
-        ECPoint reconstructed2 = SSS_EC.reconstructSecretEC(ctx, subset2, indicesSubset2);
+        ECPoint reconstructed2 = GShamir_Share.reconstructSecretEC(ctx, subset2, indicesSubset2);
         System.out.println("Reconstructed secret using subset 2: " + reconstructed2);
 
         // They must both equal the original secret.
@@ -124,7 +124,7 @@ public class SSSECTestEC {
         int n = 200;
         GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
 
-        DhPvssContext ctx = DhPvssUtils.dhPvssSetup(groupParams, t, n);
+        DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
         SecureRandom random = new SecureRandom();
         BigInteger q = ctx.getGroupParameters().getN();
         BigInteger s;
@@ -136,7 +136,7 @@ public class SSSECTestEC {
         System.out.println("Large scale test, dealer secret s: " + s);
         System.out.println("Large scale test, dealer secret S: " + S);
 
-        ECPoint[] shares = SSS_EC.generateSharesEC(ctx, S);
+        ECPoint[] shares = GShamir_Share.generateSharesEC(ctx, S);
         assertNotNull("Shares should not be null", shares);
         assertEquals("Number of shares should equal n", n, shares.length);
 
@@ -149,7 +149,7 @@ public class SSSECTestEC {
             indices[i] = i + 1;
             chosenShares[i] = shares[i];
         }
-        ECPoint reconstructed = SSS_EC.reconstructSecretEC(ctx, chosenShares, indices);
+        ECPoint reconstructed = GShamir_Share.reconstructSecretEC(ctx, chosenShares, indices);
         System.out.println("Large scale test, reconstructed secret S': " + reconstructed);
         assertEquals("Reconstructed secret should equal the original secret", S, reconstructed);
     }

@@ -3,6 +3,8 @@ package org.example.pvss;
 import java.math.BigInteger;
 import java.util.Arrays;
 
+import org.bouncycastle.math.ec.ECPoint;
+
 public class DHPVSSDistributionVerifier {
 
     /**
@@ -18,9 +20,9 @@ public class DHPVSSDistributionVerifier {
 
     public static boolean dhPvssDistributeVerify(DhPvssContext ctx,
             NizkDlEqProof proof,
-            BigInteger[] encryptedShares,
-            BigInteger pubDist,
-            BigInteger[] comKeys) {
+            ECPoint[] encryptedShares,
+            ECPoint pubDist,
+            ECPoint[] comKeys) {
         BigInteger p = ctx.getOrder();
         int n = ctx.getNumParticipants();
         int t = ctx.getThreshold();

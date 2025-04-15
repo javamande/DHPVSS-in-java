@@ -31,7 +31,7 @@ public class ParticipantKeyPairTest {
         DhPvssContext ctx = new DhPvssContext(groupParams, t, n, alphas, v);
         String participantId = "participant1";
         // Now call generateForParticipant with the context.
-        ParticipantKeyPair participantKeyPair = DhKeyPairUtils.generateForParticipant(ctx, participantId);
+        ParticipantKeyPair participantKeyPair = KeyGeneration.generateForParticipant(ctx, participantId);
 
         // Verify that the participant ID is set correctly.
         assertEquals("Participant ID should match", participantId, participantKeyPair.getId());
@@ -50,11 +50,11 @@ public class ParticipantKeyPairTest {
 
         // Generate the DLEQ proof that shows that the same x satisfies:
         // keyPair.getPublic() = g^x mod p and y = h^x mod p.
-        NizkDlProof proof = NizkDlProofGenerator.generateProof(ctx, keyPair);
+        NizkDlProof proof = NizkDlProof.generateProof(ctx, keyPair);
 
         ECPoint pub = keyPair.getPublic();
         // Verify the DLEQ proof.
-        boolean proofValid = NizkDLProofVerificator.verifyProof(ctx, pub, proof);
+        boolean proofValid = NizkDlProof.verifyProof(ctx, pub, proof);
         assertTrue("DL proof for participant should be valid", proofValid);
     }
 

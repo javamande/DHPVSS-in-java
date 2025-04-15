@@ -89,7 +89,7 @@ public class DistributionAggregationTest {
 
         // Set up the PVSS context (which creates the evaluation points and dual-code
         // coefficients).
-        DhPvssContext ctx = DhPvssUtils.dhPvssSetup(groupParams, t, n);
+        DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
         BigInteger modulus = ctx.getOrder();
         BigInteger[] alphas = ctx.getAlphas();
         BigInteger[] vs = ctx.getV();
@@ -189,7 +189,7 @@ public class DistributionAggregationTest {
         GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
         // Set up the PVSS context (this will generate evaluation points and dual‑code
         // coefficients)
-        DhPvssContext ctx = DhPvssUtils.dhPvssSetup(groupParams, t, n);
+        DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
         BigInteger modulus = ctx.getOrder(); // usually the field characteristic
 
         // Generate a distribution input; this gives you the dealer’s key pair,
@@ -213,7 +213,7 @@ public class DistributionAggregationTest {
         // In the real protocol, Cᵢ = Aᵢ + (dealerSecret * Eᵢ).
         // For controlled testing, we generate the Shamir shares Aᵢ using SSS_EC,
         // then add the mask dealerSecret * Eᵢ.
-        ECPoint[] shares = SSS_EC.generateSharesEC(ctx, distInput.getSecret());
+        ECPoint[] shares = GShamir_Share.generateSharesEC(ctx, distInput.getSecret());
         ECPoint[] encryptedShares = new ECPoint[n];
         for (int i = 0; i < n; i++) {
             // Compute the mask Mᵢ = dealerSecret * Eᵢ.
@@ -304,7 +304,7 @@ public class DistributionAggregationTest {
             assertTrue("Ephemeral key must be on the curve", ephemeralKeys[i].isValid());
         }
         // Simulate the encrypted shares as: C_i = A_i + (dealerSecret * E_i)
-        ECPoint[] shares = SSS_EC.generateSharesEC(ctx, S); // Shamir shares A_i (ECPoints)
+        ECPoint[] shares = GShamir_Share.generateSharesEC(ctx, S); // Shamir shares A_i (ECPoints)
         ECPoint[] encryptedShares = new ECPoint[n];
         for (int i = 0; i < n; i++) {
             ECPoint mask = ephemeralKeys[i].multiply(dealerSecret).normalize();

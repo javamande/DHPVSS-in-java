@@ -35,7 +35,7 @@ public class HashToPolyTest {
                 if (i == j) {
                     GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
                     SecureRandom random = new SecureRandom();
-                    DhPvssContext ctx = DhPvssUtils.dhPvssSetup(groupParams, t, n);
+                    DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
                     // Use our group generator to get the ECPoints.
                     DistributionInput distInput = DistributionInputGenerator.generateDistributionInput(ctx, random);
 
@@ -51,7 +51,7 @@ public class HashToPolyTest {
                         // commitment key:
                         comKeys[k] = participantKeyPairs[i].getPublicKey();
                     }
-                    ECPoint[] encryptedShares = SSS_EC.generateSharesEC(ctx, dealerPub);
+                    ECPoint[] encryptedShares = GShamir_Share.generateSharesEC(ctx, dealerPub);
 
                     BigInteger modulus = ctx.getOrder();
 
@@ -90,7 +90,7 @@ public class HashToPolyTest {
 
                     GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
 
-                    DhPvssContext ctx = DhPvssUtils.dhPvssSetup(groupParams, t, n);
+                    DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
 
                     // For testing, use fixed ECPoints.
                     ECPoint dealerPub = ctx.getGenerator();
@@ -128,7 +128,7 @@ public class HashToPolyTest {
         // And we create dummy comKeys and encryptedShares by multiplying the generator
         // by fixed scalars.
 
-        DhPvssContext ctx = DhPvssUtils.dhPvssSetup(GroupGenerator.generateGroup(), 2, 5);
+        DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(GroupGenerator.generateGroup(), 2, 5);
 
         ECPoint dealerPub = ctx.getGenerator();
         ECPoint[] comKeys = new ECPoint[] {
@@ -175,7 +175,7 @@ public class HashToPolyTest {
         int n = 5;
         // Set up the PVSS context from our utility; this will generate alphas and
         // dual-code coefficients.
-        DhPvssContext ctx = DhPvssUtils.dhPvssSetup(groupParams, t, n);
+        DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
 
         // For testing, we pick fixed ECPoints for the dealer's public key, commitment
         // keys, and encrypted shares.

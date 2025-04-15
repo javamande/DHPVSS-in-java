@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 
 import org.bouncycastle.math.ec.ECPoint;
 import org.junit.Test;
@@ -15,7 +14,7 @@ public class DhPvssContextTest {
 
     @Test
     public void testDhPvssContextSetup() {
-        int lambda = 32; // security parameter for testing (small, for demonstration)
+
         int t = 2; // threshold
         int n = 5; // number of participants
 
@@ -67,7 +66,6 @@ public class DhPvssContextTest {
     // Verify that the dual-code coefficients don't affect proof verification
     @Test
     public void test_dual_code_coefficients_independence() throws NoSuchAlgorithmException {
-        int lambda = 32;
         int t = 2;
         int n = 5;
 
@@ -84,14 +82,14 @@ public class DhPvssContextTest {
         }
 
         DhPvssContext ctx = new DhPvssContext(groupParams, t, n, alphas, v);
-        SecureRandom random = new SecureRandom();
+
         BigInteger secret = BigInteger.valueOf(13);
         ECPoint pub = groupParams.getG().multiply(secret);
         DhKeyPair keyPair = new DhKeyPair(secret, pub);
 
-        NizkDlProof proof = NizkDlProofGenerator.generateProof(ctx, keyPair);
+        NizkDlProof proof = NizkDlProof.generateProof(ctx, keyPair);
 
-        boolean valid = NizkDLProofVerificator.verifyProof(ctx, pub, proof);
+        boolean valid = NizkDlProof.verifyProof(ctx, pub, proof);
 
         assertTrue("Valid DL proof should verify even with dummy dual-code coefficients", valid);
     }

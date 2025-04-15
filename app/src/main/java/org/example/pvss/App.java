@@ -17,7 +17,7 @@ public class App {
         GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
         // Using helper that calls dhPvssSetup, which computes evaluation points
         // (alphas) and dual-code coefficients (v).
-        DhPvssContext ctx = DhPvssUtils.dhPvssSetup(groupParams, t, n);
+        DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
 
         System.out.println("=== PVSS Context ===");
         System.out.println("Prime modulus p: " + ctx.getOrder());
@@ -32,7 +32,7 @@ public class App {
         // For testing, we set a fixed dealer secret.
         BigInteger dealerSecret = BigInteger.valueOf(13);
         // Compute the dealer's public key: pk = G^(dealerSecret) mod p.
-        ECPoint dealerPub = ctx.getGenerator().modPow(dealerSecret, ctx.getOrder());
+        ECPoint dealerPub = ctx.getGenerator().multiply(dealerSecret);
         DhKeyPair dealerKeyPair = new DhKeyPair(dealerSecret, dealerPub);
         System.out.println("Dealer Key Pair:");
         System.out.println("  Secret: " + dealerSecret);
@@ -51,7 +51,7 @@ public class App {
 
         // Generate shares using SSS implementation (here, SSSStandard generates
         // shares as evaluations of m(X)=S + a1*X + ... + a_t*X^t).
-        ECPoint[] shares = SSS_EC.generateSharesEC(ctx, S);
+        ECPoint[] shares = GShamir_Share.generateSharesEC(ctx, S);
         System.out.println("Generated Shares:");
         for (int i = 0; i < shares.length; i++) {
             System.out.println("  Share for participant " + (i + 1) + ": " + shares[i]);
@@ -109,7 +109,7 @@ public class App {
             indices[i] = i + 1; // Participant indices 1,...,t+1.
             selectedShares[i] = shares[i];
         }
-        ECPoint reconstructed = SSS_EC.reconstructSecretEC(ctx, selectedShares, indices);
+        ECPoint reconstructed = GShamir_Share.reconstructSecretEC(ctx, selectedShares, indices);
         System.out.println("Reconstructed Secret S: " + reconstructed);
         System.out.println("Original Secret S:      " + S);
     }

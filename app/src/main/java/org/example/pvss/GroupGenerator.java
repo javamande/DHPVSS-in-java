@@ -24,7 +24,7 @@ import org.bouncycastle.math.ec.ECPoint;
  * We then wrap these in our custom GroupParameters container for use in our
  * PVSS context.
  */
-public class GroupGenerator {
+public class ECParametersPVSS {
     /**
      * Generates group parameters based on the elliptic curve secp256r1.
      * secp256r1 is widely used, standardized, and offers a good balance between
