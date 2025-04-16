@@ -3,7 +3,6 @@ package org.example.pvss;
 import static org.junit.Assert.assertTrue;
 
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 
 import org.junit.Test;
 
@@ -28,14 +27,14 @@ public class DLProofTest1 {
                     GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
                     // Set up the PVSS context using your helper method.
                     // This call uses your existing DhPvssUtils.dhPvssSetup implementation.
-                    DhPvssContext ctx = DhPvssUtils.dhPvssSetup(groupParams, t, n);
+                    DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
                     // Note: The context now contains the elliptic curve group parameters
                     // (generator,
                     // prime modulus, evaluation points, etc.)
 
                     // Generate a key pair using the context and a source of randomness.
-                    SecureRandom random = new SecureRandom();
-                    DhKeyPair keyPair = DhKeyPair.generate(ctx, random);
+
+                    DhKeyPair keyPair = DhKeyPair.generate(ctx);
 
                     // Generate the DL proof using the generated key pair.
                     NizkDlProof proof = NizkDlProof.generateProof(ctx, keyPair);

@@ -20,7 +20,7 @@ import org.bouncycastle.math.ec.ECPoint;
  * where the scalar m(αᵢ) ∈ Z_q is computed by evaluating the polynomial m at
  * αᵢ.
  */
-public class SSS_EC {
+public class GShamir_Share {
 
     /**
      * Generates shares for an elliptic curve–based Shamir secret sharing scheme.
@@ -35,7 +35,7 @@ public class SSS_EC {
         int n = ctx.getNumParticipants();
         int t = ctx.getThreshold();
         // p is the field modulus; we use it for arithmetic in Z_q.
-        BigInteger q = ctx.getGroupParameters().getN();
+        BigInteger p = ctx.getOrder();
         // Retrieve the evaluation points, α₀, α₁, …, αₙ.
         BigInteger[] alphas = ctx.getAlphas();
 
@@ -46,7 +46,7 @@ public class SSS_EC {
         coeffs[0] = BigInteger.ZERO; // Ensure m(0)=0.
         SecureRandom random = new SecureRandom();
         for (int j = 1; j <= t; j++) {
-            coeffs[j] = new BigInteger(q.bitLength(), random).mod(q);
+            coeffs[j] = new BigInteger(p.bitLength(), random).mod(p);
         }
 
         // Allocate space for the shares (for participants 1 through n).
@@ -58,13 +58,13 @@ public class SSS_EC {
             BigInteger mEval = BigInteger.ZERO;
             // Evaluate m(x) = Σ_{j=1}^{t} (c_j * x^j) mod q.
             for (int j = 1; j <= t; j++) {
-                BigInteger term = coeffs[j].multiply(x.modPow(BigInteger.valueOf(j), q)).mod(q);
-                mEval = mEval.add(term).mod(q);
+                BigInteger term = coeffs[j].multiply(x.modPow(BigInteger.valueOf(j), p)).mod(p);
+                mEval = mEval.add(term).mod(p);
             }
             // Compute the masked part as G · m(αᵢ).
-            ECPoint mask = ctx.getGenerator().multiply(mEval).normalize();
+            ECPoint mask = ctx.getGenerator().multiply(mEval);
             // The share Aᵢ = S + mask.
-            shares[i - 1] = S.add(mask).normalize();
+            shares[i - 1] = S.add(mask);
         }
         return shares;
     }
@@ -92,7 +92,7 @@ public class SSS_EC {
             throw new IllegalArgumentException("Number of shares must equal number of indices.");
         }
         int k = shares.length;
-        BigInteger subgroupprime = ctx.getGroupParameters().getN();
+        BigInteger subgroupprime = ctx.getOrder();
         BigInteger[] alphas = ctx.getAlphas();
 
         // The reconstruction is performed at x = 0.
@@ -121,6 +121,6 @@ public class SSS_EC {
             // Accumulate the share multiplied by its Lagrange coefficient.
             S_reconstructed = S_reconstructed.add(shares[i].multiply(lambda));
         }
-        return S_reconstructed.normalize();
+        return S_reconstructed;
     }
 }

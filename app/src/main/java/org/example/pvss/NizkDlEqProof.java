@@ -70,7 +70,7 @@ public class NizkDlEqProof {
     public static NizkDlEqProof generateProof(DhPvssContext ctx, ECPoint h, ECPoint x, ECPoint y, BigInteger alpha) {
         // Obtain the subgroup order q (for secp256r1, typically this is defined in the
         // EC domain parameters)
-        BigInteger q = ctx.getGroupParameters().getN();
+        BigInteger q = ctx.getOrder();
         ECPoint G = ctx.getGenerator();
 
         // Step 1. Choose random nonce w ∈ [1, q−1]
@@ -83,17 +83,17 @@ public class NizkDlEqProof {
         // a1 = [w]G and a2 = [w]h.
         ECPoint a1 = G.multiply(w).normalize();
         ECPoint a2 = h.multiply(w).normalize();
-        System.out.println("DLEQ Proof Generation:");
-        System.out.println("  Nonce w: " + w);
-        System.out.println("  Commitment a1 ([w]G): " + a1);
-        System.out.println("  Commitment a2 ([w]h): " + a2);
+        // System.out.println("DLEQ Proof Generation:");
+        // System.out.println(" Nonce w: " + w);
+        // System.out.println(" Commitment a1 ([w]G): " + a1);
+        // System.out.println(" Commitment a2 ([w]h): " + a2);
 
         // Step 3. Compute the hash H = Hash(G, x, h, y, a1, a2), and reduce modulo q.
         // (Ensure that your ingHashingToolshashElements method accepts ECPoints and
         // returns a
         // BigInteger.)
         BigInteger hashValue = HashingTools.hashElements(ctx, G, x, h, y, a1, a2).mod(q);
-        System.out.println("  Hash value H (mod q): " + hashValue);
+        // System.out.println(" Hash value H (mod q): " + hashValue);
 
         // Step 4. Use the hash as a seed for a deterministic PRNG to generate the
         // challenge e.
@@ -108,11 +108,11 @@ public class NizkDlEqProof {
         do {
             e = new BigInteger(q.bitLength(), prg);
         } while (e.compareTo(BigInteger.ZERO) == 0 || e.compareTo(q) >= 0);
-        System.out.println("  Challenge e (from PRG): " + e);
+        // System.out.println(" Challenge e (from PRG): " + e);
 
         // Step 5. Compute the response: z = w - e * α mod q.
         BigInteger z = w.subtract(e.multiply(alpha)).mod(q);
-        System.out.println("  Response z: " + z);
+        // System.out.println(" Response z: " + z);
 
         return new NizkDlEqProof(e, z);
     }
@@ -137,22 +137,23 @@ public class NizkDlEqProof {
      * @return true if the proof verifies; false otherwise.
      */
     public static boolean verifyProof(DhPvssContext ctx, ECPoint h, ECPoint x, ECPoint y, NizkDlEqProof proof) {
-        BigInteger q = ctx.getGroupParameters().getN();
+        BigInteger q = ctx.getOrder();
         ECPoint G = ctx.getGenerator();
 
-        System.out.println("DLEQ Proof Verification:");
-        System.out.println("  Received proof: e = " + proof.getChallenge() + ", z = " + proof.getResponse());
+        // System.out.println("DLEQ Proof Verification:");
+        // System.out.println(" Received proof: e = " + proof.getChallenge() + ", z = "
+        // + proof.getResponse());
 
         // Step 1. Recompute commitments:
         // a1' = [z]G + [e]x and a2' = [z]h + [e]y.
         ECPoint a1Prime = G.multiply(proof.getResponse()).add(x.multiply(proof.getChallenge())).normalize();
         ECPoint a2Prime = h.multiply(proof.getResponse()).add(y.multiply(proof.getChallenge())).normalize();
-        System.out.println("  Recomputed commitment a1': " + a1Prime);
-        System.out.println("  Recomputed commitment a2': " + a2Prime);
+        // System.out.println(" Recomputed commitment a1': " + a1Prime);
+        // System.out.println(" Recomputed commitment a2': " + a2Prime);
 
         // Step 2. Compute the verification hash H' = Hash(G, x, h, y, a1', a2') mod q.
         BigInteger hashValue = HashingTools.hashElements(ctx, G, x, h, y, a1Prime, a2Prime).mod(q);
-        System.out.println("  Verification hash value H' (mod q): " + hashValue);
+        // System.out.println(" Verification hash value H' (mod q): " + hashValue);
 
         // Step 3. Seed a PRNG with H' and generate the challenge e'.
         SecureRandom prg;
@@ -166,12 +167,12 @@ public class NizkDlEqProof {
         do {
             computedE = new BigInteger(q.bitLength(), prg);
         } while (computedE.compareTo(BigInteger.ZERO) <= 0 || computedE.compareTo(q) >= 0);
-        System.out.println("  Computed challenge e' from PRG: " + computedE);
+        // System.out.println(" Computed challenge e' from PRG: " + computedE);
 
         // Step 4. The proof is valid if the computed challenge matches the one in the
         // proof.
         boolean isValid = computedE.equals(proof.getChallenge());
-        System.out.println("  DLEQ proof verification result: " + isValid);
+        // System.out.println(" DLEQ proof verification result: " + isValid);
         return isValid;
     }
 }

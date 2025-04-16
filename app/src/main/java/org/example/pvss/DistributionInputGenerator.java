@@ -22,14 +22,16 @@ public class DistributionInputGenerator {
      * @throws NoSuchAlgorithmException if the required PRNG algorithm is not
      *                                  available.
      */
-    public static DistributionInput generateDistributionInput(DhPvssContext ctx, SecureRandom random)
+    public static DistributionInput generateDistributionInput(DhPvssContext ctx)
             throws NoSuchAlgorithmException {
+
+        SecureRandom random = new SecureRandom();
         int numParticipants = ctx.getNumParticipants();
 
         // Generate the dealer's key pair using your existing key pair generation
         // method.
         // (Note: DhKeyPair.generate uses the group parameters in the context.)
-        DhKeyPair dealerKeyPair = DhKeyPair.generate(ctx, random);
+        DhKeyPair dealerKeyPair = DhKeyPair.generate(ctx);
 
         // Generate key pairs for each participant.
         // Here we keep the participant key pairs in a list.
@@ -39,17 +41,17 @@ public class DistributionInputGenerator {
             // Here, we only require the public key. You might also generate a proof that
             // this key
             // is valid (using your existing DL proof generator, for example).
-            DhKeyPair ephemeralKeyPair = DhKeyPair.generate(ctx, random);
+            DhKeyPair ephemeralKeyPair = DhKeyPair.generate(ctx);
 
             // Optionally, generate a DL proof for the ephemeral key.
             // For demonstration, we assume a proof is generated.
-            NizkDlProof ephemeralProof = NizkDlProofGenerator.generateProof(ctx, ephemeralKeyPair);
+            NizkDlProof ephemeralProof = NizkDlProof.generateProof(ctx, ephemeralKeyPair);
 
             // Wrap in our container.
             ephemeralKeys[i] = new EphemeralKeyPublic(ephemeralKeyPair.getPublic(), ephemeralProof);
         }
         // Compute the secret S as S = [s]G.
-        BigInteger s = new BigInteger(ctx.getGroupParameters().getN().bitLength(), random);
+        BigInteger s = new BigInteger(ctx.getGroupParameters().getgroupOrd().bitLength(), random);
         ECPoint G = ctx.getGenerator();
         ECPoint secret = G.multiply(s).normalize();
 

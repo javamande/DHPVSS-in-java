@@ -1,145 +1,7 @@
-// package org.example.pvss;
-
-// import java.math.BigInteger;
-
-// import org.bouncycastle.math.ec.ECPoint;
-
-// public class DHPVSS_Dist {
-
-//     /**
-//      * Container class for the result of the distribution.
-//      * It contains the array of encrypted shares and the generated DLEQ proof.
-//      */
-//     public static class DistributionResult {
-//         private final ECPoint[] encryptedShares;
-//         private final NizkDlEqProof dleqProof;
-
-//         public DistributionResult(ECPoint[] encryptedShares, NizkDlEqProof dleqProof, boolean valid) {
-//             this.encryptedShares = encryptedShares;
-//             this.dleqProof = dleqProof;
-//         }
-
-//         public ECPoint[] getEncryptedShares() {
-//             return encryptedShares;
-//         }
-
-//         public NizkDlEqProof getDleqProof() {
-//             return dleqProof;
-//         }
-
-//         @Override
-//         public String toString() {
-//             StringBuilder sb = new StringBuilder();
-//             sb.append("DistributionResult {\n");
-//             sb.append("  Encrypted Shares:\n");
-//             for (ECPoint share : encryptedShares) {
-//                 sb.append("    ").append(share).append("\n");
-//             }
-//             sb.append("  DLEQ Proof: ").append(dleqProof).append("\n");
-//             sb.append("}");
-//             return sb.toString();
-//         }
-//     }
-
-//     /**
-//      * Distributes the secret using EC-based Shamir secret sharing.
-//      * 
-//      * The process is as follows:
-//      * 1. Generate the Shamir shares A₁, …, Aₙ with
-//      * Aᵢ = S + m(αᵢ)·G, where S is the dealer’s secret group element and m is a
-//      * random polynomial with m(α₀)=0.
-//      * 2. For each participant i (with ephemeral key Eᵢ), compute the encrypted
-//      * share:
-//      * Cᵢ = Aᵢ + (sk_D · Eᵢ)
-//      * 3. Aggregate values (e.g. U and V) from the ephemeral keys and encrypted
-//      * shares
-//      * and generate a DLEQ proof that verifies that V = U^(sk_D).
-//      *
-//      * @param ctx           The PVSS context.
-//      * @param ephemeralKeys An array of ephemeral public keys Eᵢ for the
-//      *                      participants.
-//      * @param dealerKeyPair The dealer’s key pair (containing sk_D and pk_D).
-//      * @param secret        The dealer’s secret as a group element S (typically S =
-//      *                      G·s).
-//      * @return a DistributionResult containing the array of encrypted shares and the
-//      *         DLEQ proof.
-//      */
-//     public static DistributionResult distribute(
-//             DhPvssContext ctx,
-//             ECPoint[] ephemeralKeys,
-//             DhKeyPair dealerKeyPair,
-//             BigInteger secret) {
-
-//         int n = ctx.getNumParticipants();
-
-//         // Step 1: Generate Shamir shares.
-//         // In our PVSS protocol, we compute shares as:
-//         // Aᵢ = S + m(αᵢ)·G, where m(α₀)=0 to “mask” out the randomness at the
-//         // designated point.
-//         // We assume you have an EC-based Shamir shares generator in SSS_EC.
-//         ECPoint[] shares = SSS_EC.generateSharesEC(ctx, secret);
-
-//         // Step 2: Encrypt each share using the dealer’s secret key.
-//         // For each participant i, compute:
-//         // Cᵢ = Aᵢ + (sk_D * Eᵢ)
-//         ECPoint[] encryptedShares = new ECPoint[n];
-//         for (int i = 0; i < n; i++) {
-//             // Multiply ephemeral key Eᵢ by the dealer’s secret scalar sk_D. (sk_D * Eᵢ)
-//             ECPoint mask = ephemeralKeys[i].multiply(dealerKeyPair.getSecretKey()).normalize();
-//             // Add the mask (sk_D * Eᵢ) to the Shamir share Aᵢ, that is Aᵢ + (sk_D * Eᵢ)
-//             encryptedShares[i] = shares[i].add(mask).normalize();
-//         }
-//         // Ci = encryptedShares[i]
-//         ECPoint dealerPub = dealerKeyPair.getPublic();
-//         int numPolyCoeffs = ctx.getNumParticipants() - ctx.getThreshold() - 1;
-//         BigInteger modulus = ctx.getOrder();
-
-//         BigInteger[] mHash = HashingTools.hashPointsToPoly(dealerKeyPair.getPublic(), ephemeralKeys, encryptedShares,
-//                 numPolyCoeffs, modulus);
-
-//         BigInteger[] xpoints = ctx.getAlphas();
-//         BigInteger modoulus = ctx.getOrder();
-//         /**
-//          * Evaluates the polynomial m*(X) at point x.
-//          */
-//         BigInteger[] evaluations = new BigInteger[xpoints.length];
-//         for (int i = 1; i < xpoints.length; i++) {
-//             evaluations[i] = EvaluationTools.evaluatePolynomial(mHash, xpoints[i], modulus);
-//         }
-
-//         ECPoint U = ctx.getGenerator().getCurve().getInfinity();
-//         ECPoint V = ctx.getGenerator().getCurve().getInfinity();
-
-//         BigInteger[] vis = ctx.getV();
-//         for (int i = 1; i < n; i++) {
-//             // Compute mask for U and V for the ith participant:
-//             // Note: Ensure that you reduce the scalar multiplications mod the subgroup
-//             // order if needed.
-//             BigInteger maskU = evaluations[i].multiply(vis[i]).mod(ctx.getOrder());
-//             BigInteger maskV = evaluations[i].multiply(vis[i]).mod(ctx.getOrder());
-
-//             // Compute the contribution from the ephemeral key and encrypted share.
-//             // In an elliptic curve group, the operations are additive.
-//             // Here, ephemeralKeys[i] and encryptedShares[i] are ECPoints.
-//             ECPoint termU = ephemeralKeys[i].multiply(maskU).normalize();
-//             ECPoint termV = encryptedShares[i].multiply(maskV).normalize();
-
-//             // Aggregate the values using ECPoint addition.
-//             U = U.add(termU).normalize();
-//             V = V.add(termV).normalize();
-//         }
-
-//         NizkDlEqProof proof = NizkDlEqProofGenerator.generateProof(ctx, U, dealerPub, V, dealerKeyPair.getSecretKey());
-//         // Verify the proof.
-//         boolean valid = NizkDleqProofVerificator.verifyProof(ctx, U, dealerPub, V, proof);
-
-//         return new DistributionResult(encryptedShares, proof, valid);
-//     }
-// }
-
 package org.example.pvss;
 
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
 
 import org.bouncycastle.math.ec.ECPoint;
 
@@ -220,9 +82,26 @@ public class DHPVSS_Dist {
      */
     public static DistributionResult distribute(
             DhPvssContext ctx,
-            ECPoint[] ephemeralKeys,
+            EphemeralKeyPublic[] epksWithProof,
             DhKeyPair dealerKeyPair,
             ECPoint S) {
+        // 1) Verify each ephemeral key proof
+        for (EphemeralKeyPublic ek : epksWithProof) {
+            try {
+                if (!NizkDlProof.verifyProof(ctx, ek.getPublicKey(), ek.getProof())) {
+                    throw new IllegalArgumentException("Invalid ephemeral-key proof: " + ek);
+                }
+            } catch (NoSuchAlgorithmException e) {
+                // wrap checked exception
+                throw new RuntimeException("Hash algorithm unavailable", e);
+            }
+        }
+
+        // 2) Extract the raw ECPoints (Public Keys)
+        ECPoint[] E = new ECPoint[epksWithProof.length];
+        for (int i = 0; i < E.length; i++) {
+            E[i] = epksWithProof[i].getPublicKey();
+        }
 
         int n = ctx.getNumParticipants();
         BigInteger p = ctx.getOrder(); // Prime modulus
@@ -236,7 +115,7 @@ public class DHPVSS_Dist {
         // Cᵢ = Aᵢ + (sk_D * ephemeralKey_i)
         ECPoint[] encryptedShares = new ECPoint[n];
         for (int i = 0; i < n; i++) {
-            ECPoint mask = ephemeralKeys[i].multiply(dealerKeyPair.getSecretKey()).normalize();
+            ECPoint mask = E[i].multiply(dealerKeyPair.getSecretKey()).normalize();
             encryptedShares[i] = shares[i].add(mask).normalize();
         }
 
@@ -249,7 +128,7 @@ public class DHPVSS_Dist {
         // Here, HashingTools.hashPointsToPoly must be updated to operate on ECPoints.
         BigInteger[] polyCoeffs = HashingTools.hashPointsToPoly(
                 dealerKeyPair.getPublic(), // pk_D
-                ephemeralKeys, // the ephemeral public keys, Eᵢ
+                E, // the ephemeral public keys, Eᵢ
                 encryptedShares, // the encrypted shares, Cᵢ
                 numPolyCoeffs,
                 modulus);
@@ -270,7 +149,7 @@ public class DHPVSS_Dist {
         for (int i = 1; i <= n; i++) {
             BigInteger r_i = evaluations[i].multiply(duals[i - 1]).mod(modulus);
             // Aggregation: U = U + (Eᵢ * r_i), V = V + (Cᵢ * r_i)
-            aggregateU = aggregateU.add(ephemeralKeys[i - 1].multiply(r_i)).normalize();
+            aggregateU = aggregateU.add(E[i - 1].multiply(r_i)).normalize();
             aggregateV = aggregateV.add(encryptedShares[i - 1].multiply(r_i)).normalize();
         }
 
@@ -296,5 +175,28 @@ public class DHPVSS_Dist {
         System.out.println("DLEQ proof verification: " + validProof);
 
         return new DistributionResult(encryptedShares, dleqProof);
+    }
+
+    public static void main(String[] args) throws NoSuchAlgorithmException {
+        GroupGenerator.GroupParameters gp = GroupGenerator.generateGroup();
+        int t = 10;
+        int n = 20;
+        DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(gp, t, n);
+
+        // Dealer key‐pair + secret point S = G·s
+        DhKeyPair dealer = DhKeyPair.generate(ctx);
+        BigInteger s = dealer.getSecretKey().mod(ctx.getOrder());
+        ECPoint S = ctx.getGenerator().multiply(s);
+
+        EphemeralKeyPublic[] epks = new EphemeralKeyPublic[n];
+        for (int i = 0; i < n; i++) {
+            DhKeyPair kp = DhKeyPair.generate(ctx);
+            // generate a DL proof for the ephemeral key
+            NizkDlProof proof = NizkDlProof.generateProof(ctx, kp);
+            epks[i] = new EphemeralKeyPublic(kp.getPublic(), proof);
+        }
+
+        DHPVSS_Dist.distribute(ctx, epks, dealer, S);
+
     }
 }

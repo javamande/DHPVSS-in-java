@@ -76,7 +76,7 @@ public class NizkDlProof {
      */
     public static NizkDlProof generateProof(DhPvssContext ctx, DhKeyPair keyPair) throws NoSuchAlgorithmException {
         // Retrieve the subgroup order q (for secp256r1, this is a fixed value).
-        BigInteger q = ctx.getGroupParameters().getN();
+        BigInteger q = ctx.getOrder();
         // Retrieve the generator point g.
         ECPoint g = ctx.getGenerator();
         // Retrieve the public key and secret scalar x from the key pair.
@@ -88,16 +88,16 @@ public class NizkDlProof {
         do {
             r = new BigInteger(q.bitLength(), random);
         } while (r.compareTo(BigInteger.ZERO) <= 0 || r.compareTo(q) >= 0);
-        System.out.println("DEBUG: Nonce r: " + r);
+        // System.out.println("DEBUG: Nonce r: " + r);
 
         // Step 2: Compute the commitment A = r · g.
         ECPoint A = g.multiply(r);
-        System.out.println("DEBUG: Commitment A: " + A);
+        // System.out.println("DEBUG: Commitment A: " + A);
 
         // Step 3: Compute the challenge seed by hashing (g, pub, A) using the
         // EC-compatible hash.
         BigInteger hashValue = HashingTools.hashElements(ctx, pub, A).mod(q);
-        System.out.println("DEBUG: Hash value (mod q): " + hashValue);
+        // System.out.println("DEBUG: Hash value (mod q): " + hashValue);
 
         // Use the hash value as seed for a deterministic PRNG (SHA1PRNG) to obtain the
         // challenge.
@@ -107,11 +107,11 @@ public class NizkDlProof {
         do {
             e = new BigInteger(q.bitLength(), prg);
         } while (e.compareTo(BigInteger.ZERO) <= 0 || e.compareTo(q) >= 0);
-        System.out.println("DEBUG: Challenge e from PRG: " + e);
+        // System.out.println("DEBUG: Challenge e from PRG: " + e);
 
         // Step 4: Compute the response: z = r - e * x mod q.
         BigInteger z = r.subtract(e.multiply(x)).mod(q);
-        System.out.println("DEBUG: Response z: " + z);
+        // System.out.println("DEBUG: Response z: " + z);
 
         return new NizkDlProof(e, z);
     }
@@ -135,18 +135,18 @@ public class NizkDlProof {
     public static boolean verifyProof(DhPvssContext ctx, ECPoint pub, NizkDlProof proof)
             throws NoSuchAlgorithmException {
         // Retrieve subgroup order q and generator g.
-        BigInteger q = ctx.getGroupParameters().getN();
+        BigInteger q = ctx.getOrder();
         ECPoint g = ctx.getGenerator();
 
         // Recompute A' = g·z + pub·e (elliptic curve addition and scalar
         // multiplication).
         // Note: In additive notation for elliptic curves, this is the correct formula.
         ECPoint APrime = g.multiply(proof.getResponse()).add(pub.multiply(proof.getChallenge()));
-        System.out.println("DEBUG: Recomputed commitment A': " + APrime);
+        // System.out.println("DEBUG: Recomputed commitment A': " + APrime);
 
         // Recompute the hash seed based on (g, pub, A').
         BigInteger computedHash = HashingTools.hashElements(ctx, pub, APrime).mod(q);
-        System.out.println("DEBUG: Recomputed hash value (mod q): " + computedHash);
+        // System.out.println("DEBUG: Recomputed hash value (mod q): " + computedHash);
 
         // Use the computed hash as seed for a deterministic PRNG to generate challenge
         // e'.
@@ -156,12 +156,12 @@ public class NizkDlProof {
         do {
             computedE = new BigInteger(q.bitLength(), prg);
         } while (computedE.compareTo(BigInteger.ZERO) <= 0 || computedE.compareTo(q) >= 0);
-        System.out.println("DEBUG: Computed challenge e' from PRG: " + computedE);
+        // System.out.println("DEBUG: Computed challenge e' from PRG: " + computedE);
 
         // The proof is valid if the computed challenge equals the challenge in the
         // proof.
         boolean isValid = computedE.equals(proof.getChallenge());
-        System.out.println("DEBUG: NIZK DL proof verification result: " + isValid);
+        // System.out.println("DEBUG: NIZK DL proof verification result: " + isValid);
         return isValid;
     }
 

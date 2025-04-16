@@ -25,15 +25,9 @@ public class GroupGeneratorTest {
 
         // Retrieve the prime modulus (characteristic of the underlying field) and
         // ensure it is valid.
-        BigInteger p = groupParams.getP();
+        BigInteger p = groupParams.getgroupOrd();
         assertNotNull("Prime modulus p should not be null", p);
         assertTrue("Prime modulus p should be positive", p.compareTo(BigInteger.ZERO) > 0);
-
-        // Retrieve the subgroup order, which is the order of the generator, and ensure
-        // it is valid.
-        BigInteger n = groupParams.getN();
-        assertNotNull("Subgroup order n should not be null", n);
-        assertTrue("Subgroup order n should be positive", n.compareTo(BigInteger.ZERO) > 0);
 
         // Retrieve the generator, an ECPoint.
         ECPoint G = groupParams.getG();
@@ -43,14 +37,14 @@ public class GroupGeneratorTest {
 
         // Print these values for debugging purposes.
         System.out.println("Prime modulus p: " + p);
-        System.out.println("Subgroup order n: " + n);
+
         System.out.println("Generator G: " + G);
 
         // Verify that the generator has the correct order.
         // In an elliptic curve group, multiplying the generator by the subgroup order
         // should yield the identity (point at infinity).
         ECPoint infinity = G.getCurve().getInfinity();
-        ECPoint computed = G.multiply(n).normalize();
+        ECPoint computed = G.multiply(p).normalize();
         assertTrue("G multiplied by its subgroup order should yield the identity (point at infinity)",
                 computed.equals(infinity));
 

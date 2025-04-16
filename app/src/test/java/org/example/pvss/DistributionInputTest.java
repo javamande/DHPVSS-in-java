@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import java.security.SecureRandom;
 import java.util.Arrays;
 
 import org.bouncycastle.math.ec.ECPoint;
@@ -30,16 +29,13 @@ public class DistributionInputTest {
                     GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
                     // Set up the PVSS context using your helper method.
                     // This call uses your existing DhPvssUtils.dhPvssSetup implementation.
-                    DhPvssContext ctx = DhPvssUtils.dhPvssSetup(groupParams, t, n);
+                    DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
                     // Note: The context now contains the elliptic curve group parameters
                     // (generator,
                     // prime modulus, evaluation points, etc.)
 
-                    // Generate a key pair using the context and a source of randomness.
-                    SecureRandom random = new SecureRandom();
-
                     // Generate the distribution input.
-                    DistributionInput input = DistributionInputGenerator.generateDistributionInput(ctx, random);
+                    DistributionInput input = DistributionInputGenerator.generateDistributionInput(ctx);
                     assertNotNull("Distribution input must not be null", input);
 
                     // Check dealer key pair.

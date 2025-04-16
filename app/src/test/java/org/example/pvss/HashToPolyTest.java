@@ -6,7 +6,6 @@ import static org.junit.Assert.assertNotNull;
 
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.custom.sec.SecP256R1Curve;
@@ -34,10 +33,10 @@ public class HashToPolyTest {
             for (int j = 1; j <= 10; j++) {
                 if (i == j) {
                     GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
-                    SecureRandom random = new SecureRandom();
+
                     DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
                     // Use our group generator to get the ECPoints.
-                    DistributionInput distInput = DistributionInputGenerator.generateDistributionInput(ctx, random);
+                    DistributionInput distInput = DistributionInputGenerator.generateDistributionInput(ctx);
 
                     ECPoint dealerPub = distInput.getDealerKeyPair().getPublic();
 
@@ -46,10 +45,10 @@ public class HashToPolyTest {
 
                     // Build an array of ECPoints to be used as the commitment keys.
                     ECPoint[] comKeys = new ECPoint[participantKeyPairs.length];
-                    for (int k = 0; k < participantKeyPairs.length; k++) {
+                    for (int k = 0; k < n; k++) {
                         // For instance, if you want to use each participant’s public key as their
                         // commitment key:
-                        comKeys[k] = participantKeyPairs[i].getPublicKey();
+                        comKeys[k] = participantKeyPairs[i - 1].getPublicKey();
                     }
                     ECPoint[] encryptedShares = GShamir_Share.generateSharesEC(ctx, dealerPub);
 

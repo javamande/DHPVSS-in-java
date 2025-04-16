@@ -24,7 +24,7 @@ import org.bouncycastle.math.ec.ECPoint;
  * We then wrap these in our custom GroupParameters container for use in our
  * PVSS context.
  */
-public class ECParametersPVSS {
+public class GroupGenerator {
     /**
      * Generates group parameters based on the elliptic curve secp256r1.
      * secp256r1 is widely used, standardized, and offers a good balance between
@@ -102,7 +102,7 @@ public class ECParametersPVSS {
          *
          * @return the prime modulus p as a BigInteger.
          */
-        public BigInteger getP() {
+        public BigInteger pField() {
             return ecParams.getCurve().getField().getCharacteristic();
         }
 
@@ -111,7 +111,7 @@ public class ECParametersPVSS {
          *
          * @return the subgroup order n as a BigInteger.
          */
-        public BigInteger getN() {
+        public BigInteger getgroupOrd() {
             return ecParams.getN();
         }
 

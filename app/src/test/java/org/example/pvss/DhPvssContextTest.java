@@ -40,7 +40,7 @@ public class DhPvssContextTest {
         assertNotNull("PVSS context should not be null", ctx);
 
         // Verify that the group parameters in the context are as expected.
-        assertEquals("Context modulus should equal group parameter p", groupParams.getP(), ctx.getOrder());
+        assertEquals("Context modulus should equal group parameter p", groupParams.getgroupOrd(), ctx.getOrder());
         assertEquals("Context generator should equal group parameter g", groupParams.getG(), ctx.getGenerator());
 
         // Verify evaluation points.

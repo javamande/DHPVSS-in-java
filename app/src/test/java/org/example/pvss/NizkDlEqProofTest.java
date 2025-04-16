@@ -3,7 +3,6 @@ package org.example.pvss;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigInteger;
-import java.security.SecureRandom;
 
 import org.bouncycastle.math.ec.ECPoint;
 import org.junit.Test;
@@ -31,14 +30,13 @@ public class NizkDlEqProofTest {
 
                     DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
 
-                    SecureRandom random = new SecureRandom();
-                    DistributionInput distInput = DistributionInputGenerator.generateDistributionInput(ctx, random);
+                    DistributionInput distInput = DistributionInputGenerator.generateDistributionInput(ctx);
                     DhKeyPair keypair = distInput.getDealerKeyPair();
                     BigInteger skD = keypair.getSecretKey();
                     // Generate a dealer secret sk_D
                     // BigInteger skD;
                     // do {
-                    // skD = new BigInteger(groupParams.getN().bitLength(), random);
+                    // skD = new BigInteger(groupParams.getN().bitLength());
                     // } while (skD.compareTo(BigInteger.ZERO) <= 0);
                     // Dealer's public key: pk_D = [skD]G
                     ECPoint G = ctx.getGenerator();
@@ -52,7 +50,7 @@ public class NizkDlEqProofTest {
                     for (int k = 0; k < participantKeyPairs.length; k++) {
                         // For instance, if you want to use each participant’s public key as their
                         // commitment key:
-                        comKeys[k] = participantKeyPairs[i].getPublicKey();
+                        comKeys[k] = participantKeyPairs[i + 1].getPublicKey();
                     }
 
                     ECPoint[] encryptedShares = GShamir_Share.generateSharesEC(ctx, S);
@@ -69,7 +67,7 @@ public class NizkDlEqProofTest {
                     // Now choose a random scalar u to compute a secondary base U = [u]G.
                     BigInteger u;
                     do {
-                        u = new BigInteger(groupParams.getN().bitLength(), random);
+                        u = new BigInteger(groupParams.getG().getEncoded(true));
                     } while (u.compareTo(BigInteger.ZERO) <= 0);
 
                     ECPoint U = G.multiply(u).normalize();

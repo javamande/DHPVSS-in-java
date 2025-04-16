@@ -2,115 +2,102 @@ package org.example.pvss;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.util.Arrays;
 
 import org.bouncycastle.math.ec.ECPoint;
 
+/**
+ * Demo application running the full DHPVSS PVSS protocol end-to-end:
+ * 1) Setup
+ * 2) Distribution (with proofs)
+ * 3) Public verification of distribution
+ * 4) Per-share decryption (with proofs)
+ * 5) Public verification of each decryption
+ * 6) Secret reconstruction
+ */
 public class App {
     public static void main(String[] args) throws Exception {
 
-        int lambda = 64; // e.g., 64-bit prime (for testin
-        int t = 6;
-        int n = 10;
-        // Generate group parameters (safe prime p and subgroup generator G) and create
-        // the PVSS context.
-        GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
-        // Using helper that calls dhPvssSetup, which computes evaluation points
-        // (alphas) and dual-code coefficients (v).
-        DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
-
-        System.out.println("=== PVSS Context ===");
-        System.out.println("Prime modulus p: " + ctx.getOrder());
-        System.out.println("Group generator G: " + ctx.getGenerator());
-        System.out.println("Evaluation points (alphas): " + Arrays.toString(ctx.getAlphas()));
-        System.out.println("Dual-code coefficients (v): " + Arrays.toString(ctx.getV()));
-        System.out.println();
-
-        // -----------------------------
-        // 2. Dealer Key Generation
-        // -----------------------------
-        // For testing, we set a fixed dealer secret.
-        BigInteger dealerSecret = BigInteger.valueOf(13);
-        // Compute the dealer's public key: pk = G^(dealerSecret) mod p.
-        ECPoint dealerPub = ctx.getGenerator().multiply(dealerSecret);
-        DhKeyPair dealerKeyPair = new DhKeyPair(dealerSecret, dealerPub);
-        System.out.println("Dealer Key Pair:");
-        System.out.println("  Secret: " + dealerSecret);
-        System.out.println("  Public: " + dealerPub);
-        System.out.println();
-
-        // -----------------------------
-        // 3. Shamir Secret Sharing (SSS)
-        // -----------------------------
-        // Define a secret S to be shared. In the multiplicative setting,
-        // we encode S as S = G^(s) mod p, where s is a secret scalar.
-        BigInteger secretScalar = BigInteger.valueOf(7);
-        ECPoint S = ctx.getGenerator().multiply(secretScalar);
-        System.out.println("Secret S (to be shared): " + S);
-        System.out.println();
-
-        // Generate shares using SSS implementation (here, SSSStandard generates
-        // shares as evaluations of m(X)=S + a1*X + ... + a_t*X^t).
-        ECPoint[] shares = GShamir_Share.generateSharesEC(ctx, S);
-        System.out.println("Generated Shares:");
-        for (int i = 0; i < shares.length; i++) {
-            System.out.println("  Share for participant " + (i + 1) + ": " + shares[i]);
-        }
-        System.out.println();
-
-        // -----------------------------
-        // 4. Distribution: Encryption of Shares & DLEQ Proof Generation
-        // -----------------------------
-        // For distribution, we need commitment keys for each participant.
-        // For testing, we generate these as random elements in Z_p*.
-        int numParticipants = ctx.getNumParticipants();
-        BigInteger[] comKeys = new BigInteger[numParticipants];
-        SecureRandom rnd = new SecureRandom();
-        for (int i = 0; i < numParticipants; i++) {
-            BigInteger key;
+        for (int j = 1; j <= 10; j++) {
+            // Use your setup function to create a PVSS context.
+            // For example, choose threshold t and total participants n.
+            SecureRandom rnd = new SecureRandom();
+            int maxParticipants = 15;
+            int n, t;
             do {
-                key = new BigInteger(ctx.getOrder().bitLength(), rnd);
-            } while (key.compareTo(BigInteger.ZERO) <= 0 || key.compareTo(ctx.getOrder()) >= 0);
-            comKeys[i] = key;
+                n = 3 + rnd.nextInt(maxParticipants - 2); // ensure at least 3 participants
+                // t in [1 .. n-2]
+                t = 1 + rnd.nextInt(n - 2);
+            } while (n - t - 2 <= 0);
+
+            GroupGenerator.GroupParameters gp = GroupGenerator.generateGroup();
+            DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(gp, t, n);
+
+            System.out.println("NO PARTICIPANTS : " + n);
+            System.out.println("THRESHOLD : " + t);
+
+            // Dealer keypair and secret
+            DhKeyPair dealer = DhKeyPair.generate(ctx);
+            BigInteger secretScalar = dealer.getSecretKey().mod(ctx.getOrder());
+            ECPoint S = ctx.getGenerator().multiply(secretScalar);
+            System.out.println("Dealer's secret S = " + S);
+
+            // 2) Generate ephemeral keypairs + proofs
+            DhKeyPair[] ephKeyPairs = new DhKeyPair[n];
+            EphemeralKeyPublic[] epkWrapped = new EphemeralKeyPublic[n];
+            for (int i = 0; i < n; i++) {
+                DhKeyPair kp = DhKeyPair.generate(ctx);
+                ephKeyPairs[i] = kp;
+                NizkDlProof proof = NizkDlProof.generateProof(ctx, kp);
+                epkWrapped[i] = new EphemeralKeyPublic(kp.getPublic(), proof);
+            }
+
+            // 3) Distribution
+            System.out.println("\n=== Distribution Phase ===");
+            DHPVSS_Dist.DistributionResult distRes = DHPVSS_Dist.distribute(ctx, epkWrapped, dealer, S);
+            ECPoint[] C = distRes.getEncryptedShares();
+            System.out.println("Encrypted shares: " + C.length);
+
+            // 4) Public verify distribution
+            System.out.println("Verifying distribution proof...");
+            ECPoint[] E = new ECPoint[n];
+            for (int i = 0; i < n; i++) {
+                E[i] = epkWrapped[i].getPublicKey();
+            }
+            boolean okDist = DHPVSS_Verify.verify(ctx,
+                    dealer.getPublic(),
+                    E, C,
+                    distRes.getDleqProof());
+            System.out.println("Distribution verification passed? " + okDist);
+
+            // 5) Decrypt each share
+            System.out.println("\n=== Decryption Phase ===");
+            ECPoint[] A = new ECPoint[n];
+            for (int i = 0; i < n; i++) {
+                ECPoint E_i = epkWrapped[i].getPublicKey();
+                BigInteger skE = ephKeyPairs[i].getSecretKey();
+                ECPoint C_i = C[i];
+
+                DhPvss_Decryption.DecryptionShare ds = DhPvss_Decryption.decShare(ctx, dealer.getPublic(), E_i,
+                        skE, C_i);
+                A[i] = ds.getShare();
+            }
+
+            // 6) Reconstruct secret from first t+1 shares
+            System.out.println("\n=== Reconstruction Phase ===");
+            int k = t + 1;
+            ECPoint[] subsetShares = new ECPoint[k];
+            int[] indices = new int[k];
+            for (int i = 0; i < k; i++) {
+                subsetShares[i] = A[i];
+                indices[i] = i + 1;
+            }
+            ECPoint recovered = DhPvss_Reconstruct.reconstruct(ctx, subsetShares, indices);
+            System.out.println("Reconstructed S = " + recovered);
+            System.out.println(
+                    "Reconstruction matches original? " + recovered.equals(S));
+            System.out.println(" COMPLETED TEST " + j
+                    + " OF 10 ");
         }
-        System.out.println("Commitment Keys:");
-        System.out.println(Arrays.toString(comKeys));
-        System.out.println();
-
-        // Call the distribution phase which encrypts the shares and generates a DLEQ
-        // proof.git
-        // In the multiplicative setting, the encrypted share for participant i is
-        // computed as:
-        // C_i = A_i * (comKey[i])^(dealerSecret) mod p.
-        DHPVSS_Dist.DistributionResult distResult = DHPVSS_Dist.distribute(ctx, comKeys,
-                dealerKeyPair, S);
-
-        // -----------------------------
-        // 5. Distribution Verification
-        // -----------------------------
-        // Verify the distribution using the aggregated weighted products U and V and
-        // the DLEQ proof.
-        boolean distValid = DHPVSSDistributionVerifier.dhPvssDistributeVerify(ctx,
-                distResult.getProof(),
-                distResult.getEncryptedShares(),
-                dealerKeyPair.getPublic(),
-                comKeys);
-        System.out.println("Distribution Verification Result: " + distValid);
-        System.out.println();
-
-        // -----------------------------
-        // 6. Reconstruction of Secret via SSS
-        // -----------------------------
-        // For reconstruction, choose t+1 shares. Here we simply take the first t+1
-        // shares.
-        int[] indices = new int[t + 1];
-        ECPoint[] selectedShares = new ECPoint[t + 1];
-        for (int i = 0; i < t + 1; i++) {
-            indices[i] = i + 1; // Participant indices 1,...,t+1.
-            selectedShares[i] = shares[i];
-        }
-        ECPoint reconstructed = GShamir_Share.reconstructSecretEC(ctx, selectedShares, indices);
-        System.out.println("Reconstructed Secret S: " + reconstructed);
-        System.out.println("Original Secret S:      " + S);
     }
+
 }

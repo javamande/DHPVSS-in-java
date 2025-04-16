@@ -52,11 +52,12 @@ public class DhKeyPair {
      * @param random a source of secure randomness.
      * @return a new DhKeyPair with secret key and corresponding public key.
      */
-    public static DhKeyPair generate(DhPvssContext ctx, SecureRandom random) {
+    public static DhKeyPair generate(DhPvssContext ctx) {
+        SecureRandom random = new SecureRandom();
         // Retrieve the subgroup order (n) from the context.
         // Note: For an EC group, this is the order of the generator (usually denoted by
         // N).
-        BigInteger order = ctx.getGroupParameters().getN();
+        BigInteger order = ctx.getGroupParameters().getgroupOrd();
         // Retrieve the group generator (an ECPoint) from the context.
         ECPoint generator = ctx.getGenerator();
 

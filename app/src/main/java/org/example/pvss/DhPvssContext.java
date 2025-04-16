@@ -32,7 +32,7 @@ public class DhPvssContext {
 
     public BigInteger getOrder() {
         // We might need p from the underlying field for certain computations.
-        return groupParams.getP();
+        return groupParams.getgroupOrd();
     }
 
     public ECPoint getGenerator() {

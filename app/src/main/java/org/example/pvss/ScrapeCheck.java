@@ -1,4 +1,6 @@
 
+package org.example.pvss;
+
 import java.math.BigInteger;
 
 public class ScrapeCheck {

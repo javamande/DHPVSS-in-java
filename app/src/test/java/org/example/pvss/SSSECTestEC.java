@@ -33,11 +33,11 @@ public class SSSECTestEC {
 
         // For testing, generate a random dealer secret s from [1, subgroupOrder - 1].
         SecureRandom random = new SecureRandom();
-        BigInteger q = ctx.getGroupParameters().getN();
+        BigInteger p = ctx.getOrder();
         BigInteger s;
         do {
-            s = new BigInteger(q.bitLength(), random);
-        } while (s.compareTo(BigInteger.ZERO) <= 0 || s.compareTo(q) >= 0);
+            s = new BigInteger(p.bitLength(), random);
+        } while (s.compareTo(BigInteger.ZERO) <= 0 || s.compareTo(p) >= 0);
 
         // The dealer’s secret EC element S = s·G.
         ECPoint S = ctx.getGenerator().multiply(s).normalize();
@@ -78,11 +78,11 @@ public class SSSECTestEC {
 
         DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
         SecureRandom random = new SecureRandom();
-        BigInteger q = ctx.getGroupParameters().getN();
+        BigInteger p = ctx.getOrder();
         BigInteger s;
         do {
-            s = new BigInteger(q.bitLength(), random);
-        } while (s.compareTo(BigInteger.ZERO) <= 0 || s.compareTo(q) >= 0);
+            s = new BigInteger(p.bitLength(), random);
+        } while (s.compareTo(BigInteger.ZERO) <= 0 || s.compareTo(p) >= 0);
 
         ECPoint S = ctx.getGenerator().multiply(s).normalize();
         System.out.println("Dealer secret scalar s: " + s);
@@ -126,11 +126,11 @@ public class SSSECTestEC {
 
         DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(groupParams, t, n);
         SecureRandom random = new SecureRandom();
-        BigInteger q = ctx.getGroupParameters().getN();
+        BigInteger p = ctx.getOrder();
         BigInteger s;
         do {
-            s = new BigInteger(q.bitLength(), random);
-        } while (s.compareTo(BigInteger.ZERO) <= 0 || s.compareTo(q) >= 0);
+            s = new BigInteger(p.bitLength(), random);
+        } while (s.compareTo(BigInteger.ZERO) <= 0 || s.compareTo(p) >= 0);
 
         ECPoint S = ctx.getGenerator().multiply(s).normalize();
         System.out.println("Large scale test, dealer secret s: " + s);
