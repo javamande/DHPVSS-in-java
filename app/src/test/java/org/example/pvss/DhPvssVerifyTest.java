@@ -5,34 +5,33 @@ import static org.junit.Assert.assertTrue;
 
 import java.math.BigInteger;
 
-
 import org.bouncycastle.math.ec.ECPoint;
 import org.junit.Test;
 
 /**
  * Unit tests for the DHPVSS_Verify public verification routine.
  */
-public class DhPvssVerifyTest {
+public class DHPVSSVerifyTest {
 
     /**
      * A full valid distribution should verify successfully.
      */
-
     @Test
     public void testVerifyValidDistribution() throws Exception {
         int t = 2, n = 5;
+        SecureRandom rnd = new SecureRandom();
         GroupGenerator.GroupParameters gp = GroupGenerator.generateGroup();
         DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(gp, t, n);
 
         // Dealer keypair + secret S
-        DhKeyPair dealer = DhKeyPair.generate(ctx);
-        BigInteger s = dealer.getSecretKey().mod(ctx.getOrder());
+        DhKeyPair dealer = DhKeyPair.generate(ctx, rnd);
+        BigInteger s = dealer.getSecret().mod(ctx.getOrder());
         ECPoint S = ctx.getGenerator().multiply(s);
 
         // Build wrappers
         EphemeralKeyPublic[] epks = new EphemeralKeyPublic[n];
         for (int i = 0; i < n; i++) {
-            DhKeyPair kp = DhKeyPair.generate(ctx);
+            DhKeyPair kp = DhKeyPair.generate(ctx, rnd);
             NizkDlProof proof = NizkDlProof.generateProof(ctx, kp);
             epks[i] = new EphemeralKeyPublic(kp.getPublic(), proof);
         }
@@ -59,15 +58,16 @@ public class DhPvssVerifyTest {
     @Test
     public void testVerifyFailsOnTamperedShare() throws Exception {
         int t = 2, n = 5;
-
+        SecureRandom rnd = new SecureRandom();
         DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(
-                GroupGenerator.generateGroup(), t, n);
-        DhKeyPair dealer = DhKeyPair.generate(ctx);
-        ECPoint S = ctx.getGenerator().multiply(dealer.getSecretKey().mod(ctx.getOrder()));
+            GroupGenerator.generateGroup(), t, n
+        );
+        DhKeyPair dealer = DhKeyPair.generate(ctx, rnd);
+        ECPoint S = ctx.getGenerator().multiply(dealer.getSecret().mod(ctx.getOrder()));
 
         EphemeralKeyPublic[] epks = new EphemeralKeyPublic[n];
         for (int i = 0; i < n; i++) {
-            DhKeyPair kp = DhKeyPair.generate(ctx);
+            DhKeyPair kp = DhKeyPair.generate(ctx, rnd);
             NizkDlProof proof = NizkDlProof.generateProof(ctx, kp);
             epks[i] = new EphemeralKeyPublic(kp.getPublic(), proof);
         }
@@ -94,11 +94,12 @@ public class DhPvssVerifyTest {
     @Test(expected = IllegalArgumentException.class)
     public void testVerifyWrongLengths() {
         int t = 2, n = 5;
-
+        SecureRandom rnd = new SecureRandom();
         DhPvssContext ctx = DHPVSS_Setup.dhPvssSetup(
-                GroupGenerator.generateGroup(), t, n);
+            GroupGenerator.generateGroup(), t, n
+        );
         // Dummy inputs of wrong length
-        ECPoint[] E = new ECPoint[n - 1];
+        ECPoint[] E = new ECPoint[n-1];
         ECPoint[] C = new ECPoint[n];
         NizkDlEqProof dummyProof = null;
         // Should throw IllegalArgumentException

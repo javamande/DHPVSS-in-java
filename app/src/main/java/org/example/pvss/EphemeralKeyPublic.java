@@ -3,28 +3,30 @@ package org.example.pvss;
 import org.bouncycastle.math.ec.ECPoint;
 
 /**
- * Container for an ephemeral public key along with its proof.
- * This class encapsulates the public part of an ephemeral key
- * (E) and a proof object (e.g. a NIZK proof) that the key is well‐formed.
+ * Represents the ephemeral role key E_i in DHPVSS
+ * - E_i ∈ 𝔾 is the public key for role i, computed as E_i = G · skE_i.
+ * - Accompanied by a NIZK proof π proving knowledge of skE_i such that
+ * log_G(E_i) = skE_i
+ * (i.e. proof that E_i is well‑formed).
  */
 public class EphemeralKeyPublic {
-    private final ECPoint ephemeralPublicKey;
-    private final NizkDlProof proof; // This may be null if a proof is not generated
+    private final ECPoint E; // Role i’s public key E_i
+    private final NizkDlProof proof; // π: NIZK proof of DLOG_G(E_i)
 
-    public EphemeralKeyPublic(ECPoint ephemeralPublicKey, NizkDlProof proof) {
-        this.ephemeralPublicKey = ephemeralPublicKey;
+    public EphemeralKeyPublic(ECPoint E, NizkDlProof proof) {
+        this.E = E;
         this.proof = proof;
     }
 
     /**
-     * Returns the ephemeral public key.
+     * Returns the ephemeral committee key E_i ∈ 𝔾.
      */
     public ECPoint getPublicKey() {
-        return ephemeralPublicKey;
+        return E;
     }
 
     /**
-     * Returns the NIZK proof associated with this ephemeral key.
+     * Returns the non‑interactive proof π that shows E_i = G · skE_i.
      */
     public NizkDlProof getProof() {
         return proof;
@@ -32,6 +34,6 @@ public class EphemeralKeyPublic {
 
     @Override
     public String toString() {
-        return "EphemeralKeyPublic { ephemeralPublicKey=" + ephemeralPublicKey + ", proof=" + proof + " }";
+        return "EphemeralKeyPublic { E=" + E + ", π=" + proof + " }";
     }
 }

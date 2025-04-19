@@ -5,18 +5,23 @@ import java.security.SecureRandom;
 
 import org.bouncycastle.math.ec.ECPoint;
 
+/**
+ * A Diffie–Hellman key pair over the elliptic‑curve group 𝔾 of prime order p.
+ * 
+ * sk ∈ ℤ_p – the secret scalar
+ * pk = sk · G – the public EC point, where G is the fixed group generator
+ */
 public class DhKeyPair {
-    // The dealer’s (or participant’s) secret key, a scalar in Z_n.
+    // the secret key sk, a value in the field ℤ_p
     private final BigInteger secretKey;
-    // The corresponding public key, an EC point computed as G multiplied by the
-    // secret.
+    // the public key PK = sk·G, an ECPoint on the curve
     private final ECPoint pub;
 
     /**
-     * Constructs a DhKeyPair with the provided secret and public key.
+     * Constructs a new key pair.
      *
-     * @param secretKey the secret scalar in Z_n.
-     * @param pub       the corresponding public key ECPoint.
+     * @param secretKey the secret scalar sk ∈ ℤ_p
+     * @param pub       the public point PK = sk·G in 𝔾
      */
     public DhKeyPair(BigInteger secretKey, ECPoint pub) {
         this.secretKey = secretKey;
@@ -24,55 +29,46 @@ public class DhKeyPair {
     }
 
     /**
-     * Returns the secret key (a scalar in Z_n).
-     *
-     * @return the secret key.
+     * @return the secret scalar sk
      */
     public BigInteger getSecretKey() {
         return secretKey;
     }
 
     /**
-     * Returns the public key as an ECPoint.
-     *
-     * @return the public key.
+     * @return the public key point PK = sk·G
      */
     public ECPoint getPublic() {
         return pub;
     }
 
     /**
-     * Generates a key pair using the elliptic curve group parameters contained in
-     * the given PVSS context.
-     * In elliptic curve cryptography, the secret key is a random scalar in Z_n, and
-     * the public key is computed
-     * as pub = G * secretKey, where G is the group generator.
+     * Generates a fresh key pair for the DHPVSS protocol.
      *
-     * @param ctx    the PVSS context containing the EC group parameters.
-     * @param random a source of secure randomness.
-     * @return a new DhKeyPair with secret key and corresponding public key.
+     * Picks sk uniformly at random from [1, p−1], where p is the prime order
+     * of the elliptic‑curve group 𝔾, then computes PK = sk·G.
+     *
+     * @param ctx the PVSS context containing 𝔾, its order p, and generator G
+     * @return a new DhKeyPair(sk, PK)
      */
     public static DhKeyPair generate(DhPvssContext ctx) {
         SecureRandom random = new SecureRandom();
-        // Retrieve the subgroup order (n) from the context.
-        // Note: For an EC group, this is the order of the generator (usually denoted by
-        // N).
-        BigInteger order = ctx.getGroupParameters().getgroupOrd();
-        // Retrieve the group generator (an ECPoint) from the context.
-        ECPoint generator = ctx.getGenerator();
 
-        // Generate a random secret key in the range [1, order - 1].
-        BigInteger secretKey;
+        // p = order of the curve group 𝔾
+        BigInteger p = ctx.getGroupParameters().getgroupOrd();
+        // G = fixed generator point in 𝔾
+        ECPoint G = ctx.getGenerator();
+
+        // pick sk ∈ {1,...,p−1}
+        BigInteger sk;
         do {
-            secretKey = new BigInteger(order.bitLength(), random);
-        } while (secretKey.compareTo(BigInteger.ZERO) <= 0 || secretKey.compareTo(order) >= 0);
+            sk = new BigInteger(p.bitLength(), random);
+        } while (sk.compareTo(BigInteger.ONE) < 0
+                || sk.compareTo(p) >= 0);
 
-        // Compute the public key as the scalar multiplication of the generator by the
-        // secret key.
-        // In elliptic curve cryptography, this is performed using the ECPoint multiply
-        // method.
-        ECPoint pub = generator.multiply(secretKey).normalize();
+        // PK = sk · G
+        ECPoint PK = G.multiply(sk).normalize();
 
-        return new DhKeyPair(secretKey, pub);
+        return new DhKeyPair(sk, PK);
     }
 }

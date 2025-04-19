@@ -6,11 +6,11 @@ import java.security.SecureRandom;
 import org.bouncycastle.math.ec.ECPoint;
 
 /**
- * Demo application running the full DHPVSS PVSS protocol end-to-end:
+ * Demo application running the full DHPVSS PVSS protocol.
  * 1) Setup
  * 2) Distribution (with proofs)
  * 3) Public verification of distribution
- * 4) Per-share decryption (with proofs)
+ * 4) Decreyption-share decryption (with proofs for correct decryption)
  * 5) Public verification of each decryption
  * 6) Secret reconstruction
  */

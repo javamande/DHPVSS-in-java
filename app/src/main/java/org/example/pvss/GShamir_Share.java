@@ -6,121 +6,91 @@ import java.security.SecureRandom;
 import org.bouncycastle.math.ec.ECPoint;
 
 /**
- * Implements Shamir secret sharing over an elliptic curve for DHPVSS.
- * The dealer’s random polynomial is defined over the underlying field as:
+ * Shamir secret sharing over an elliptic curve in the DHPVSS (YOSO) model.
+ * Dealer holds a long‑term scalar sk_D ∈ ℤₚ and publishes its group share
+ * S = G · sk_D ∈ 𝔾. A random polynomial m(x) of degree t with m(0)=0 is
+ * used to mask S across n roles (committee positions).
  *
- * m(x) = c₁ * x + c₂ * x² + … + cₜ * xᵗ (mod q),
- *
- * ensuring m(0) = 0.
- * Then, if the dealer’s secret is S ∈ G (computed as S = s·G),
- * the share for participant i (with evaluation point αᵢ, i ≥ 1) is defined as:
- *
- * Aᵢ = S + [ m(αᵢ) · G ]
- *
- * where the scalar m(αᵢ) ∈ Z_q is computed by evaluating the polynomial m at
- * αᵢ.
+ * Polynomial m(x) = c₁·x + c₂·x² + … + cₜ·xᵗ mod p, with random coefficients
+ * c₁,…,cₜ ∈ ℤₚ.
+ * For role i with evaluation point αᵢ, dealer computes share:
+ * A_i = S + G·m(αᵢ) ∈ 𝔾.
  */
 public class GShamir_Share {
 
     /**
-     * Generates shares for an elliptic curve–based Shamir secret sharing scheme.
-     *
-     * @param ctx the PVSS context containing public parameters (including
-     *            evaluation points)
-     * @param s   the dealer’s secret scalar (so that the dealer’s secret S = s·G)
-     * @return an array of ECPoints, one share per participant.
+     * Generate DHPVSS shares A_i = S + G·m(αᵢ) for all i=1..n.
+     * 
+     * @param ctx DHPVSS context holding G ∈ 𝔾, p=|𝔾|, alphas α₀…αₙ, threshold t,
+     *            and n.
+     * @param S   Dealer’s group share S = G·sk_D.
+     * @return Array of n ECPoints, one share A_i per role i.
      */
     public static ECPoint[] generateSharesEC(DhPvssContext ctx, ECPoint S) {
-        // Number of participants and threshold.
-        int n = ctx.getNumParticipants();
-        int t = ctx.getThreshold();
-        // p is the field modulus; we use it for arithmetic in Z_q.
-        BigInteger p = ctx.getOrder();
-        // Retrieve the evaluation points, α₀, α₁, …, αₙ.
-        BigInteger[] alphas = ctx.getAlphas();
+        int n = ctx.getNumParticipants(); // total roles
+        int t = ctx.getThreshold(); // degree
+        BigInteger p = ctx.getOrder(); // prime order p of 𝔾
+        ECPoint G = ctx.getGenerator(); // generator of 𝔾
+        BigInteger[] alphas = ctx.getAlphas(); // α₀…αₙ
 
-        // Define the random polynomial m(x) = c₁*x + c₂*x² + ... + cₜ*xᵗ mod p, i.e.,
-        // with m(0)=0.
-        // We need t random coefficients.
+        // Build random polynomial m(x) with m(0)=0
         BigInteger[] coeffs = new BigInteger[t + 1];
-        coeffs[0] = BigInteger.ZERO; // Ensure m(0)=0.
-        SecureRandom random = new SecureRandom();
+        coeffs[0] = BigInteger.ZERO;
+        SecureRandom rnd = new SecureRandom();
         for (int j = 1; j <= t; j++) {
-            coeffs[j] = new BigInteger(p.bitLength(), random).mod(p);
+            coeffs[j] = new BigInteger(p.bitLength(), rnd).mod(p);
         }
 
-        // Allocate space for the shares (for participants 1 through n).
         ECPoint[] shares = new ECPoint[n];
-        // For each participant i, evaluate m(αᵢ) and compute
-        // Aᵢ = S + (G · m(αᵢ)).
         for (int i = 1; i <= n; i++) {
-            BigInteger x = alphas[i]; // Evaluation point for participant i.
+            BigInteger x = alphas[i];
             BigInteger mEval = BigInteger.ZERO;
-            // Evaluate m(x) = Σ_{j=1}^{t} (c_j * x^j) mod q.
+            // evaluate m(αᵢ)
             for (int j = 1; j <= t; j++) {
                 BigInteger term = coeffs[j].multiply(x.modPow(BigInteger.valueOf(j), p)).mod(p);
                 mEval = mEval.add(term).mod(p);
             }
-            // Compute the masked part as G · m(αᵢ).
-            ECPoint mask = ctx.getGenerator().multiply(mEval);
-            // The share Aᵢ = S + mask.
-            shares[i - 1] = S.add(mask);
+            // A_i = S + G·m(αᵢ)
+            ECPoint Ai = S.add(G.multiply(mEval));
+            shares[i - 1] = Ai.normalize();
         }
         return shares;
     }
 
     /**
-     * Reconstructs the dealer’s secret S from a subset of shares using Lagrange
-     * interpolation at x = 0.
-     *
-     * Given shares Aᵢ = S + (m(αᵢ) · G) for i in I, reconstruction computes:
-     *
-     * S' = Σ_{i in I} λ_i · A_i,
-     *
-     * where λ_i are the Lagrange coefficients computed in the underlying field at x
-     * = 0,
-     * which ensures that Σ λ_i·m(α_i) = m(0) = 0.
-     *
-     * @param ctx     the PVSS context.
-     * @param shares  the selected shares (ECPoints) for participants in I.
-     * @param indices the corresponding evaluation point indices (values in {1, …,
-     *                n}).
-     * @return the reconstructed secret S as an ECPoint.
+     * Reconstruct dealer’s group share S from at least t+1 role shares A_i.
+     * Using Lagrange interpolation at x=0:
+     * S = Σ_{i∈I} λ_i · A_i
+     * with λ_i computed over ℤₚ so that Σ λ_i·m(αᵢ) = m(0) = 0.
+     * 
+     * @param ctx     DHPVSS context
+     * @param shares  ECPoints A_i for roles in subset I
+     * @param indices 1-based indices i ∈ I corresponding to αᵢ
+     * @return Recovered group share S ∈ 𝔾
      */
     public static ECPoint reconstructSecretEC(DhPvssContext ctx, ECPoint[] shares, int[] indices) {
         if (shares.length != indices.length) {
-            throw new IllegalArgumentException("Number of shares must equal number of indices.");
+            throw new IllegalArgumentException("Share count must match indices count");
         }
         int k = shares.length;
-        BigInteger subgroupprime = ctx.getOrder();
+        BigInteger p = ctx.getOrder();
         BigInteger[] alphas = ctx.getAlphas();
+        ECPoint Srec = ctx.getGenerator().getCurve().getInfinity();
+        BigInteger x0 = BigInteger.ZERO; // interpolation at 0
 
-        // The reconstruction is performed at x = 0.
-        BigInteger x0 = BigInteger.ZERO;
-
-        // Initialize S_reconstructed to the identity element (point at infinity) in G.
-        ECPoint S_reconstructed = ctx.getGenerator().getCurve().getInfinity();
-
-        // Compute Lagrange coefficients λ_i for each share.
         for (int i = 0; i < k; i++) {
-            int idx = indices[i]; // Evaluation point for the i-th share.
-            BigInteger lambda = BigInteger.ONE;
+            int idx = indices[i];
+            BigInteger λ = BigInteger.ONE;
             for (int j = 0; j < k; j++) {
-                if (i == j) {
+                if (i == j)
                     continue;
-                }
                 int idxJ = indices[j];
-                // Lagrange coefficient for share i:
-                // λ_i = ∏_{j≠i} ((0 - α_j)/(α_i - α_j)) mod p.
-                BigInteger numerator = x0.subtract(alphas[idxJ]).mod(subgroupprime);
-                BigInteger denominator = alphas[idx].subtract(alphas[idxJ]).mod(subgroupprime);
-                BigInteger invDenom = denominator.modInverse(subgroupprime);
-                lambda = lambda.multiply(numerator.multiply(invDenom)).mod(subgroupprime);
+                BigInteger num = x0.subtract(alphas[idxJ]).mod(p);
+                BigInteger den = alphas[idx].subtract(alphas[idxJ]).mod(p);
+                λ = λ.multiply(num.multiply(den.modInverse(p))).mod(p);
             }
-            System.out.println("Lagrange coefficient for share at index " + idx + " = " + lambda);
-            // Accumulate the share multiplied by its Lagrange coefficient.
-            S_reconstructed = S_reconstructed.add(shares[i].multiply(lambda));
+            Srec = Srec.add(shares[i].multiply(λ));
         }
-        return S_reconstructed;
+        return Srec.normalize();
     }
 }

@@ -2,70 +2,80 @@ package org.example.pvss;
 
 import java.math.BigInteger;
 
+/**
+ * DHPVSS evaluation utilities in the YOLO YOSO model.
+ * All arithmetic is done in the prime field ℤp (the subgroup order of the EC
+ * group).
+ */
 public class EvaluationTools {
 
     /**
-     * Generates the SCRAPE sum terms for each participant.
-     * For each participant x (using evaluation point evalPoints[x] for x=1..n),
-     * it computes:
-     * poly_eval = Σ (polyCoeffs[i] · (evalPoints[x])^i) mod modulus,
-     * term[x-1] = codeCoeffs[x-1] · poly_eval mod modulus.
+     * Compute, for each role i=1…n, the SCRAPE “weighted evaluation” rᵢ · m*(αᵢ):
      *
-     * @param modulus       the prime modulus used in the arithmetic
-     * @param evalPoints    the evaluation points (an array of BigIntegers; index 0
-     *                      is unused,
-     *                      indices 1..n are used)
-     * @param codeCoeffs    the code coefficients for participants (length = n)
-     * @param polyCoeffs    the polynomial coefficients (length = numPolyCoeffs)
-     * @param n             the number of participants
-     * @param numPolyCoeffs the number of polynomial coefficients
-     * @return an array of BigIntegers representing the SCRAPE sum terms for each
-     *         participant.
+     * m*(X) = ∑_{j=0}^{d} cⱼ·X^j // hash‑derived polynomial of degree d=n−t−2
+     * rᵢ = vᵢ·m*(αᵢ) mod p // dual‑code coeff vᵢ · evaluation at αᵢ
+     *
+     * @param p subgroup order (prime modulus)
+     * @param α evaluation points [0…n], use only α[1…n]
+     * @param v dual‑code coefficients [v₁…vₙ]
+     * @param c polynomial coefficients [c₀…c_d] for m*(X)
+     * @param n total number of roles/participants
+     * @return array r[0…n−1] where r[i] = r_{i+1} = v_{i+1}·m*(α_{i+1}) mod p
      */
-    public static BigInteger[] generateScrapeSumTerms(BigInteger modulus,
-            BigInteger[] evalPoints,
-            BigInteger[] codeCoeffs,
-            BigInteger[] polyCoeffs,
-            int n, int numPolyCoeffs) {
-        BigInteger[] terms = new BigInteger[n];
-        // For each participant x = 1 ... n:
-        for (int x = 1; x <= n; x++) {
-            BigInteger evalPoint = evalPoints[x]; // recall: evalPoints[0] is unused
-            BigInteger polyEval = BigInteger.ZERO;
-            // Compute polyEval = sum{i=0}^{numPolyCoeffs - 1} polyCoeffs[i] * (evalPoint)^i
-            // mod modulus.
-            for (int i = 0; i < numPolyCoeffs; i++) {
-                BigInteger term = evalPoint.modPow(BigInteger.valueOf(i), modulus)
-                        .multiply(polyCoeffs[i]).mod(modulus);
-                polyEval = polyEval.add(term).mod(modulus);
+    public static BigInteger[] computeScrapeWeights(
+            BigInteger p,
+            BigInteger[] α,
+            BigInteger[] v,
+            BigInteger[] c,
+            int n) {
+        BigInteger[] r = new BigInteger[n];
+        for (int i = 1; i <= n; i++) {
+            // evaluate m*(αᵢ)
+            BigInteger eval = BigInteger.ZERO;
+            BigInteger xPow = BigInteger.ONE; // αᵢ⁰
+            for (int j = 0; j < c.length; j++) {
+                eval = eval.add(c[j].multiply(xPow)).mod(p);
+                xPow = xPow.multiply(α[i]).mod(p);
             }
-            // Multiply by the corresponding code coefficient.
-            terms[x - 1] = codeCoeffs[x - 1].multiply(polyEval).mod(modulus);
+            // multiply by dual‑code coefficient vᵢ
+            r[i - 1] = v[i - 1].multiply(eval).mod(p);
         }
-        return terms;
+        return r;
     }
 
     /**
-     * Evaluates the polynomial m*(X) at point x.
+     * Evaluate the hash‑derived polynomial m*(X) at a single point αᵢ:
+     *
+     * m*(αᵢ) = ∑_{j=0}^{d} cⱼ·(αᵢ)^j mod p
+     *
+     * @param c polynomial coefficients [c₀…c_d]
+     * @param α evaluation point αᵢ
+     * @param p subgroup order (prime modulus)
+     * @return the field value m*(αᵢ)
      */
-    public static BigInteger evaluatePolynomial(BigInteger[] polyCoeffs, BigInteger x, BigInteger modulus) {
+    public static BigInteger evaluatePolynomial(BigInteger[] c, BigInteger α, BigInteger p) {
         BigInteger result = BigInteger.ZERO;
-
-        for (int j = 0; j < polyCoeffs.length; j++) {
-            // term = polyCoeffs[j] * (x^j mod modulus)
-            BigInteger term = polyCoeffs[j].multiply(x.modPow(BigInteger.valueOf(j), modulus)).mod(modulus);
-            result = result.add(term).mod(modulus);
+        BigInteger xPow = BigInteger.ONE;
+        for (BigInteger coeff : c) {
+            result = result.add(coeff.multiply(xPow)).mod(p);
+            xPow = xPow.multiply(α).mod(p);
         }
         return result;
     }
 
-    public static BigInteger[] evaluatePolynomialAtAllPoints(BigInteger[] polyCoeffs, BigInteger[] xPoints,
-            BigInteger modulus) {
-        BigInteger[] evaluations = new BigInteger[xPoints.length];
-        for (int i = 0; i < xPoints.length; i++) {
-            evaluations[i] = evaluatePolynomial(polyCoeffs, xPoints[i], modulus);
+    /**
+     * Batch‑evaluate m*(X) at all α[1…n]:
+     *
+     * @param c polynomial coefficients [c₀…c_d]
+     * @param α evaluation points [0…n]
+     * @param p subgroup order (prime modulus)
+     * @return array evals[0…n] with evals[i] = m*(α[i]) (note index 0 is unused)
+     */
+    public static BigInteger[] evalAll(BigInteger[] c, BigInteger[] α, BigInteger p) {
+        BigInteger[] out = new BigInteger[α.length];
+        for (int i = 1; i < α.length; i++) {
+            out[i] = evalPolynomial(c, α[i], p);
         }
-        return evaluations;
+        return out;
     }
-
 }

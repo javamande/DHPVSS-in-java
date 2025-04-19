@@ -8,25 +8,17 @@ import org.bouncycastle.math.ec.ECPoint;
 
 /**
  * A simple representation of a non-interactive zero-knowledge (NIZK) proof
- * for a discrete logarithm relation. Typically this proof contains two values:
- * a challenge and a response.
+ * for a discrete-logarithm relation on an elliptic curve.
+ * It carries a challenge and a response.
  */
 public class NizkDlProof {
-    private final BigInteger challenge; // private for anonomity/safety
-    // Final = once the field is assigned a value (typically in the constructor), it
-    // cannot be changed.
-    // private final ensures that once the proof is constructed, its values remain
-    // constant
-    private final BigInteger response; // private for anonomity/safety
+    private final BigInteger challenge;
+    private final BigInteger response;
 
     /**
-     * Constructs a NizkDlProof with the given challenge and response.
-     *
-     * @param challenge the challenge value (often computed via a hash) e
-     * @param response  the response value computed as z = r - e * x mod order
+     * @param challenge the Fiat–Shamir challenge e
+     * @param response  the response z = r - e·x mod p
      */
-
-    // Constructor for NizkDlProof.
     public NizkDlProof(BigInteger challenge, BigInteger response) {
         this.challenge = challenge;
         this.response = response;
@@ -40,8 +32,7 @@ public class NizkDlProof {
         return response;
     }
 
-    @Override // best practice to annotate methods that are intended to override a method from
-              // a superclass.
+    @Override
     public String toString() {
         return "NizkDlProof{" +
                 "challenge=" + challenge +
@@ -52,117 +43,61 @@ public class NizkDlProof {
     private static final SecureRandom random = new SecureRandom();
 
     /**
-     * Generates a non‑interactive zero knowledge (NIZK) proof (via Fiat‑Shamir) for
-     * the
-     * discrete logarithm relation on an elliptic curve.
-     *
-     * The proof shows knowledge of a secret scalar x such that:
-     * pub = g · x,
-     * where g is the group generator and pub is the public key (an ECPoint).
-     *
-     * The process is as follows:
-     * 1. Sample a random nonce r (1 ≤ r < q) from Z_q.
-     * 2. Compute the commitment A = r · g.
-     * 3. Compute a hash over (g, pub, A) to obtain a seed value, reduce it modulo
-     * q,
-     * and use it to deterministically generate a challenge e.
-     * 4. Compute the response: z = r – e · x (mod q).
-     *
-     * @param ctx     the PVSS context containing elliptic curve parameters.
-     * @param keyPair the DhKeyPair containing the secret key x and public key pub.
-     * @return a NizkDlProof object containing the challenge e and response z.
-     * @throws NoSuchAlgorithmException if the specified PRNG algorithm is not
-     *                                  available.
+     * Generates a NIZK proof of knowledge of x in pub = x·G via Fiat–Shamir:
+     * 1) r ←R [1,p-1]
+     * 2) A = r·G
+     * 3) e = Hash(G,pub,A) mod p → seed PRG
+     * 4) z = r - e·x mod p
      */
-    public static NizkDlProof generateProof(DhPvssContext ctx, DhKeyPair keyPair) throws NoSuchAlgorithmException {
-        // Retrieve the subgroup order q (for secp256r1, this is a fixed value).
-        BigInteger q = ctx.getOrder();
-        // Retrieve the generator point g.
-        ECPoint g = ctx.getGenerator();
-        // Retrieve the public key and secret scalar x from the key pair.
+    public static NizkDlProof generateProof(DhPvssContext ctx, DhKeyPair keyPair)
+            throws NoSuchAlgorithmException {
+        BigInteger p = ctx.getOrder();
+        ECPoint G = ctx.getGenerator();
         ECPoint pub = keyPair.getPublic();
         BigInteger x = keyPair.getSecretKey();
 
-        // Step 1: Generate a random nonce r in [1, q-1].
         BigInteger r;
         do {
-            r = new BigInteger(q.bitLength(), random);
-        } while (r.compareTo(BigInteger.ZERO) <= 0 || r.compareTo(q) >= 0);
-        // System.out.println("DEBUG: Nonce r: " + r);
+            r = new BigInteger(p.bitLength(), random);
+        } while (r.signum() <= 0 || r.compareTo(p) >= 0);
 
-        // Step 2: Compute the commitment A = r · g.
-        ECPoint A = g.multiply(r);
-        // System.out.println("DEBUG: Commitment A: " + A);
+        ECPoint A = G.multiply(r);
 
-        // Step 3: Compute the challenge seed by hashing (g, pub, A) using the
-        // EC-compatible hash.
-        BigInteger hashValue = HashingTools.hashElements(ctx, pub, A).mod(q);
-        // System.out.println("DEBUG: Hash value (mod q): " + hashValue);
-
-        // Use the hash value as seed for a deterministic PRNG (SHA1PRNG) to obtain the
-        // challenge.
+        BigInteger seed = HashingTools.hashElements(ctx, pub, A).mod(p);
         SecureRandom prg = SecureRandom.getInstance("SHA1PRNG");
-        prg.setSeed(hashValue.toByteArray());
+        prg.setSeed(seed.toByteArray());
+
         BigInteger e;
         do {
-            e = new BigInteger(q.bitLength(), prg);
-        } while (e.compareTo(BigInteger.ZERO) <= 0 || e.compareTo(q) >= 0);
-        // System.out.println("DEBUG: Challenge e from PRG: " + e);
+            e = new BigInteger(p.bitLength(), prg);
+        } while (e.signum() <= 0 || e.compareTo(p) >= 0);
 
-        // Step 4: Compute the response: z = r - e * x mod q.
-        BigInteger z = r.subtract(e.multiply(x)).mod(q);
-        // System.out.println("DEBUG: Response z: " + z);
-
+        BigInteger z = r.subtract(e.multiply(x)).mod(p);
         return new NizkDlProof(e, z);
     }
 
     /**
-     * Verifies a NIZK proof for the discrete logarithm relation.
-     *
-     * Given g (the generator), pub = g · x, and a proof (e, z), the verifier
-     * computes:
-     * A' = z · g + e · pub.
-     * Then, it hashes (g, pub, A') and uses the result (seeded into a PRNG) to
-     * generate a challenge e'.
-     * The proof is accepted if e' equals the challenge from the proof.
-     *
-     * @param ctx   the PVSS context containing elliptic curve parameters.
-     * @param pub   the public key as an ECPoint.
-     * @param proof the NizkDlProof containing the challenge and response.
-     * @return true if the proof is valid, false otherwise.
-     * @throws NoSuchAlgorithmException if the PRNG algorithm is not available.
+     * Verifies the NIZKDL proof:
+     * A' = z·G + e·pub, then recompute e' = PRG( Hash(G,pub,A') )
+     * and check e' == e.
      */
     public static boolean verifyProof(DhPvssContext ctx, ECPoint pub, NizkDlProof proof)
             throws NoSuchAlgorithmException {
-        // Retrieve subgroup order q and generator g.
-        BigInteger q = ctx.getOrder();
-        ECPoint g = ctx.getGenerator();
+        BigInteger p = ctx.getOrder();
+        ECPoint G = ctx.getGenerator();
+        BigInteger e = proof.getChallenge();
+        BigInteger z = proof.getResponse();
 
-        // Recompute A' = g·z + pub·e (elliptic curve addition and scalar
-        // multiplication).
-        // Note: In additive notation for elliptic curves, this is the correct formula.
-        ECPoint APrime = g.multiply(proof.getResponse()).add(pub.multiply(proof.getChallenge()));
-        // System.out.println("DEBUG: Recomputed commitment A': " + APrime);
-
-        // Recompute the hash seed based on (g, pub, A').
-        BigInteger computedHash = HashingTools.hashElements(ctx, pub, APrime).mod(q);
-        // System.out.println("DEBUG: Recomputed hash value (mod q): " + computedHash);
-
-        // Use the computed hash as seed for a deterministic PRNG to generate challenge
-        // e'.
+        ECPoint Aprime = G.multiply(z).add(pub.multiply(e));
+        BigInteger seed = HashingTools.hashElements(ctx, pub, Aprime).mod(p);
         SecureRandom prg = SecureRandom.getInstance("SHA1PRNG");
-        prg.setSeed(computedHash.toByteArray());
-        BigInteger computedE;
+        prg.setSeed(seed.toByteArray());
+
+        BigInteger e2;
         do {
-            computedE = new BigInteger(q.bitLength(), prg);
-        } while (computedE.compareTo(BigInteger.ZERO) <= 0 || computedE.compareTo(q) >= 0);
-        // System.out.println("DEBUG: Computed challenge e' from PRG: " + computedE);
+            e2 = new BigInteger(p.bitLength(), prg);
+        } while (e2.signum() <= 0 || e2.compareTo(p) >= 0);
 
-        // The proof is valid if the computed challenge equals the challenge in the
-        // proof.
-        boolean isValid = computedE.equals(proof.getChallenge());
-        // System.out.println("DEBUG: NIZK DL proof verification result: " + isValid);
-        return isValid;
+        return e2.equals(e);
     }
-
 }

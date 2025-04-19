@@ -6,9 +6,28 @@ import java.security.SecureRandom;
 
 import org.bouncycastle.math.ec.ECPoint;
 
+/**
+ * Non‑interactive zero‑knowledge proof of equality of discrete logs (DLEQ)
+ * in the context of DHPVSS.
+ *
+ * <p>
+ * This proves knowledge of α ∈ ℤₚ such that simultaneously
+ * x = [α]·G and y = [α]·h
+ * for two bases G,h ∈ 𝔾, without revealing α.
+ *
+ * <p>
+ * In DHPVSS distribution:
+ * <ul>
+ * <li>G = group generator</li>
+ * <li>h = secondary base (e.g. the weighted aggregate U)</li>
+ * <li>x = dealer’s public key = [skD]·G</li>
+ * <li>y = weighted aggregate V = [skD]·h</li>
+ * <li>α = dealer’s secret key skD ∈ ℤₚ</li>
+ * </ul>
+ */
 public class NizkDlEqProof {
-    private final BigInteger challenge;
-    private final BigInteger response;
+    private final BigInteger challenge; // e ∈ ℤₚ
+    private final BigInteger response; // z ∈ ℤₚ
 
     public NizkDlEqProof(BigInteger challenge, BigInteger response) {
         this.challenge = challenge;
@@ -25,154 +44,126 @@ public class NizkDlEqProof {
 
     @Override
     public String toString() {
-        return "DleqProof{" +
-                "challenge=" + challenge +
-                ", response=" + response +
-                '}';
+        return "NizkDlEqProof{e=" + challenge + ", z=" + response + "}";
     }
 
-    private static final SecureRandom random = new SecureRandom();
+    private static final SecureRandom RNG = new SecureRandom();
 
     /**
-     * Generates a DLEQ proof for the elliptic curve relation:
+     * Generate a DLEQ proof for α ∈ ℤₚ satisfying x = [α]·G and y = [α]·h.
      *
-     * Given:
-     * x = [α]G and y = [α]h,
+     * <ol>
+     * <li>Pick random w ∈R [1, p−1]</li>
+     * <li>a₁ = [w]·G, a₂ = [w]·h</li>
+     * <li>H = Hash(G, x, h, y, a₁, a₂) mod p</li>
+     * <li>Use H as seed for SHA1PRNG → challenge e ∈R [1, p−1]</li>
+     * <li>response z = w − e·α (mod p)</li>
+     * </ol>
      *
-     * this proof shows knowledge of the secret scalar α.
-     *
-     * In the PVSS distribution:
-     * - G is the group generator.
-     * - h is the secondary base (for example, the aggregated commitment U).
-     * - x is the dealer’s public key (computed as [α]G).
-     * - y is the value computed as [α]h (e.g. from the aggregation of encrypted
-     * shares).
-     * - α is the dealer’s secret key (skD).
-     *
-     * The proof is constructed as follows:
-     * 1. Choose a random nonce w ∈ [1, q−1], where q is the subgroup order.
-     * 2. Compute the commitments:
-     * a1 = [w]G, and a2 = [w]h.
-     * 3. Compute the hash H = Hash(G, x, h, y, a1, a2) (using a fixed-length
-     * encoding),
-     * then reduce it modulo q.
-     * 4. Use H as a seed to a deterministic PRNG to “draw” a challenge e ∈ [1,
-     * q−1].
-     * 5. Compute the response: z = w − e·α mod q.
-     *
-     * @param ctx   the PVSS context containing the group parameters.
-     * @param h     the secondary base (an ECPoint, e.g. U).
-     * @param x     the public value [α]G (e.g. dealer’s public key).
-     * @param y     the second public value [α]h.
-     * @param alpha the secret scalar (e.g. the dealer’s secret skD).
-     * @return a NizkDlEqProof object containing the challenge e and response z.
+     * @param ctx   DHPVSS context (provides G and subgroup order p)
+     * @param h     secondary base h ∈ 𝔾
+     * @param x     = [α]·G ∈ 𝔾
+     * @param y     = [α]·h ∈ 𝔾
+     * @param alpha secret α ∈ ℤₚ
+     * @return challenge/response pair (e,z)
      */
-    public static NizkDlEqProof generateProof(DhPvssContext ctx, ECPoint h, ECPoint x, ECPoint y, BigInteger alpha) {
-        // Obtain the subgroup order q (for secp256r1, typically this is defined in the
-        // EC domain parameters)
-        BigInteger q = ctx.getOrder();
+    public static NizkDlEqProof generateProof(
+            DhPvssContext ctx,
+            ECPoint h,
+            ECPoint x,
+            ECPoint y,
+            BigInteger alpha) {
+        BigInteger p = ctx.getOrder();
         ECPoint G = ctx.getGenerator();
 
-        // Step 1. Choose random nonce w ∈ [1, q−1]
+        // 1) random w ∈ [1, p−1]
         BigInteger w;
         do {
-            w = new BigInteger(q.bitLength(), random);
-        } while (w.compareTo(BigInteger.ZERO) <= 0 || w.compareTo(q) >= 0);
+            w = new BigInteger(p.bitLength(), RNG);
+        } while (w.signum() <= 0 || w.compareTo(p) >= 0);
 
-        // Step 2. Compute commitments using elliptic curve scalar multiplication:
-        // a1 = [w]G and a2 = [w]h.
+        // 2) commitments a1 = w·G, a2 = w·h
         ECPoint a1 = G.multiply(w).normalize();
         ECPoint a2 = h.multiply(w).normalize();
-        // System.out.println("DLEQ Proof Generation:");
-        // System.out.println(" Nonce w: " + w);
-        // System.out.println(" Commitment a1 ([w]G): " + a1);
-        // System.out.println(" Commitment a2 ([w]h): " + a2);
 
-        // Step 3. Compute the hash H = Hash(G, x, h, y, a1, a2), and reduce modulo q.
-        // (Ensure that your ingHashingToolshashElements method accepts ECPoints and
-        // returns a
-        // BigInteger.)
-        BigInteger hashValue = HashingTools.hashElements(ctx, G, x, h, y, a1, a2).mod(q);
-        // System.out.println(" Hash value H (mod q): " + hashValue);
+        // 3) H = Hash(G, x, h, y, a1, a2) mod p
+        BigInteger H = HashingTools
+                .hashElements(ctx, G, x, h, y, a1, a2)
+                .mod(p);
 
-        // Step 4. Use the hash as a seed for a deterministic PRNG to generate the
-        // challenge e.
+        // 4) challenge e ← PRG(H) in [1, p−1]
         SecureRandom prg;
         try {
             prg = SecureRandom.getInstance("SHA1PRNG");
         } catch (NoSuchAlgorithmException ex) {
-            throw new RuntimeException("SHA1PRNG not available", ex);
+            throw new RuntimeException("SHA1PRNG unavailable", ex);
         }
-        prg.setSeed(hashValue.toByteArray());
+        prg.setSeed(H.toByteArray());
         BigInteger e;
         do {
-            e = new BigInteger(q.bitLength(), prg);
-        } while (e.compareTo(BigInteger.ZERO) == 0 || e.compareTo(q) >= 0);
-        // System.out.println(" Challenge e (from PRG): " + e);
+            e = new BigInteger(p.bitLength(), prg);
+        } while (e.signum() == 0 || e.compareTo(p) >= 0);
 
-        // Step 5. Compute the response: z = w - e * α mod q.
-        BigInteger z = w.subtract(e.multiply(alpha)).mod(q);
-        // System.out.println(" Response z: " + z);
+        // 5) z = w − e·α mod p
+        BigInteger z = w.subtract(e.multiply(alpha)).mod(p);
 
         return new NizkDlEqProof(e, z);
     }
 
     /**
-     * Verifies a DLEQ proof for the relation:
+     * Verify a DLEQ proof for x=[α]·G, y=[α]·h.
      *
-     * Given that x = [α]G and y = [α]h, the proof demonstrates that the same scalar
-     * α was used.
+     * <ol>
+     * <li>a₁' = [z]·G + [e]·x</li>
+     * <li>a₂' = [z]·h + [e]·y</li>
+     * <li>H' = Hash(G, x, h, y, a₁', a₂') mod p</li>
+     * <li>e' ← PRG(H')</li>
+     * <li>Accept iff e' == e (from proof)</li>
+     * </ol>
      *
-     * Verification steps:
-     * 1. Recompute a1' = [z]G + [e]x, and a2' = [z]h + [e]y.
-     * 2. Compute H' = Hash(G, x, h, y, a1', a2') mod q.
-     * 3. Use H' as the seed for a deterministic PRNG to obtain challenge e'.
-     * 4. The proof verifies if e' equals the challenge in the proof.
-     *
-     * @param ctx   the PVSS context containing group parameters.
-     * @param h     the second base (ECPoint).
-     * @param x     the public value [α]G.
-     * @param y     the public value [α]h.
-     * @param proof the DLEQ proof containing the challenge e and response z.
-     * @return true if the proof verifies; false otherwise.
+     * @param ctx DHPVSS context
+     * @param h   secondary base h ∈ 𝔾
+     * @param x   public key = [α]·G
+     * @param y   aggregate = [α]·h
+     * @param prf proof (e,z)
+     * @return true iff proof checks out
      */
-    public static boolean verifyProof(DhPvssContext ctx, ECPoint h, ECPoint x, ECPoint y, NizkDlEqProof proof) {
-        BigInteger q = ctx.getOrder();
+    public static boolean verifyProof(
+            DhPvssContext ctx,
+            ECPoint h,
+            ECPoint x,
+            ECPoint y,
+            NizkDlEqProof prf) {
+        BigInteger p = ctx.getOrder();
         ECPoint G = ctx.getGenerator();
 
-        // System.out.println("DLEQ Proof Verification:");
-        // System.out.println(" Received proof: e = " + proof.getChallenge() + ", z = "
-        // + proof.getResponse());
+        BigInteger e = prf.getChallenge();
+        BigInteger z = prf.getResponse();
 
-        // Step 1. Recompute commitments:
-        // a1' = [z]G + [e]x and a2' = [z]h + [e]y.
-        ECPoint a1Prime = G.multiply(proof.getResponse()).add(x.multiply(proof.getChallenge())).normalize();
-        ECPoint a2Prime = h.multiply(proof.getResponse()).add(y.multiply(proof.getChallenge())).normalize();
-        // System.out.println(" Recomputed commitment a1': " + a1Prime);
-        // System.out.println(" Recomputed commitment a2': " + a2Prime);
+        // 1) a₁' = z·G + e·x
+        ECPoint a1p = G.multiply(z).add(x.multiply(e)).normalize();
+        // a₂' = z·h + e·y
+        ECPoint a2p = h.multiply(z).add(y.multiply(e)).normalize();
 
-        // Step 2. Compute the verification hash H' = Hash(G, x, h, y, a1', a2') mod q.
-        BigInteger hashValue = HashingTools.hashElements(ctx, G, x, h, y, a1Prime, a2Prime).mod(q);
-        // System.out.println(" Verification hash value H' (mod q): " + hashValue);
+        // 2) H' = Hash(G,x,h,y,a₁',a₂') mod p
+        BigInteger H2 = HashingTools
+                .hashElements(ctx, G, x, h, y, a1p, a2p)
+                .mod(p);
 
-        // Step 3. Seed a PRNG with H' and generate the challenge e'.
+        // 3) e' ← PRG(H')
         SecureRandom prg;
         try {
             prg = SecureRandom.getInstance("SHA1PRNG");
         } catch (NoSuchAlgorithmException ex) {
-            throw new RuntimeException("SHA1PRNG not available", ex);
+            throw new RuntimeException("SHA1PRNG unavailable", ex);
         }
-        prg.setSeed(hashValue.toByteArray());
-        BigInteger computedE;
+        prg.setSeed(H2.toByteArray());
+        BigInteger e2;
         do {
-            computedE = new BigInteger(q.bitLength(), prg);
-        } while (computedE.compareTo(BigInteger.ZERO) <= 0 || computedE.compareTo(q) >= 0);
-        // System.out.println(" Computed challenge e' from PRG: " + computedE);
+            e2 = new BigInteger(p.bitLength(), prg);
+        } while (e2.signum() == 0 || e2.compareTo(p) >= 0);
 
-        // Step 4. The proof is valid if the computed challenge matches the one in the
-        // proof.
-        boolean isValid = computedE.equals(proof.getChallenge());
-        // System.out.println(" DLEQ proof verification result: " + isValid);
-        return isValid;
+        // 4) accept iff e2 == e
+        return e2.equals(e);
     }
 }

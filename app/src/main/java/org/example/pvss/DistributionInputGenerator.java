@@ -6,56 +6,60 @@ import java.security.SecureRandom;
 
 import org.bouncycastle.math.ec.ECPoint;
 
+/**
+ * *Helper method used in debugging in app, so probably redundant*
+ * Prepares the inputs for the DHPVSS distribution phase.
+ *
+ * • Dealer key‐pair (sk_D, pk_D) with pk_D = G·sk_D
+ * • Ephemeral participant keys {E_i, π_i} where E_i = G·sk_{E,i} and π_i is a
+ * DL proof
+ * • Secret point S ∈ 𝔾, namely S = s·G
+ */
 public class DistributionInputGenerator {
 
     /**
-     * Generates the inputs needed for the distribution phase.
+     * Builds a DistributionInput ≔ (dealerKP, {Eᵢ, πᵢ}_{i=1..n}, S) for DHPVSS.
      *
-     * @param ctx    the PVSS context containing group parameters (including the EC
-     *               group and generator).
-     *               The context also embeds the number of participants.
-     * @param random a source of secure randomness.
-     * @return an instance of DistributionInput containing:
-     *         - The dealer's key pair (skD, pkD).
-     *         - A list of key pairs for the participants.
-     *         - A secret S ∈ G.
-     * @throws NoSuchAlgorithmException if the required PRNG algorithm is not
-     *                                  available.
+     * @param ctx the DHPVSS context pp = (𝔾, p, t, n, {α_i}, {v_i})
+     * @return DistributionInput containing:
+     *         • dealerKP = (sk_D, pk_D)
+     *         • ephemeralKeys[i] = (E_i, π_i) for i∈[1..n], with E_i = G·sk_{E,i}
+     *         • secret S = s·G ∈ 𝔾
+     * @throws NoSuchAlgorithmException if the DL proof PRG is unavailable
      */
     public static DistributionInput generateDistributionInput(DhPvssContext ctx)
             throws NoSuchAlgorithmException {
 
-        SecureRandom random = new SecureRandom();
-        int numParticipants = ctx.getNumParticipants();
+        SecureRandom rnd = new SecureRandom();
+        int n = ctx.getNumParticipants();
 
-        // Generate the dealer's key pair using your existing key pair generation
-        // method.
-        // (Note: DhKeyPair.generate uses the group parameters in the context.)
-        DhKeyPair dealerKeyPair = DhKeyPair.generate(ctx);
+        // 1) Dealer key‐pair (sk_D, pk_D) ← Gen()
+        DhKeyPair dealerKP = DhKeyPair.generate(ctx);
+        ECPoint pk_D = dealerKP.getPublic();
+        BigInteger sk_D = dealerKP.getSecretKey();
 
-        // Generate key pairs for each participant.
-        // Here we keep the participant key pairs in a list.
-        EphemeralKeyPublic[] ephemeralKeys = new EphemeralKeyPublic[numParticipants];
-        for (int i = 0; i < numParticipants; i++) {
-            // For each participant, generate an ephemeral key pair.
-            // Here, we only require the public key. You might also generate a proof that
-            // this key
-            // is valid (using your existing DL proof generator, for example).
-            DhKeyPair ephemeralKeyPair = DhKeyPair.generate(ctx);
+        // 2) For each i=1..n: generate ephemeral sk_{E,i} and E_i = G·sk_{E,i},
+        // then π_i ← NIZK-DL proof that log_G(E_i) = sk_{E,i}.
+        EphemeralKeyPublic[] ephemeralKeys = new EphemeralKeyPublic[n];
+        for (int i = 0; i < n; i++) {
+            DhKeyPair ephKP = DhKeyPair.generate(ctx);
+            ECPoint E_i = ephKP.getPublic();
+            BigInteger skE = ephKP.getSecretKey();
 
-            // Optionally, generate a DL proof for the ephemeral key.
-            // For demonstration, we assume a proof is generated.
-            NizkDlProof ephemeralProof = NizkDlProof.generateProof(ctx, ephemeralKeyPair);
+            // π_i: proof of DL for E_i = G·sk_{E,i}
+            NizkDlProof π_i = NizkDlProof.generateProof(ctx, ephKP);
 
-            // Wrap in our container.
-            ephemeralKeys[i] = new EphemeralKeyPublic(ephemeralKeyPair.getPublic(), ephemeralProof);
+            ephemeralKeys[i] = new EphemeralKeyPublic(E_i, π_i);
         }
-        // Compute the secret S as S = [s]G.
-        BigInteger s = new BigInteger(ctx.getGroupParameters().getgroupOrd().bitLength(), random);
-        ECPoint G = ctx.getGenerator();
-        ECPoint secret = G.multiply(s).normalize();
 
-        // Return the complete distribution input.
-        return new DistributionInput(dealerKeyPair, ephemeralKeys, secret);
+        // 3) Sample secret scalar s ← Z_p, compute S = s·G
+        BigInteger p = ctx.getGroupParameters().getgroupOrd();
+        BigInteger s;
+        do {
+            s = new BigInteger(p.bitLength(), rnd).mod(p);
+        } while (s.equals(BigInteger.ZERO));
+        ECPoint S = ctx.getGenerator().multiply(s).normalize();
+
+        return new DistributionInput(dealerKP, ephemeralKeys, S);
     }
 }
