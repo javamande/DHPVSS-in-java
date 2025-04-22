@@ -48,9 +48,8 @@ public class NizkDlEqProofTest {
                     // Build an array of ECPoints to be used as the commitment keys.
                     ECPoint[] comKeys = new ECPoint[participantKeyPairs.length];
                     for (int k = 0; k < participantKeyPairs.length; k++) {
-                        // For instance, if you want to use each participant’s public key as their
-                        // commitment key:
-                        comKeys[k] = participantKeyPairs[i + 1].getPublicKey();
+
+                        comKeys[k] = participantKeyPairs[k].getPublicKey();
                     }
 
                     ECPoint[] encryptedShares = GShamir_Share.generateSharesEC(ctx, S);

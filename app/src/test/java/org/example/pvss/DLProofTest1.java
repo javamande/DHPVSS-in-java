@@ -6,7 +6,7 @@ import java.security.NoSuchAlgorithmException;
 
 import org.junit.Test;
 
-public class DLProofTest1 {
+public class DlProofTest1 {
 
     @Test
     public void testDLProofVerification() throws NoSuchAlgorithmException {
@@ -55,7 +55,7 @@ public class DLProofTest1 {
 
     public static void main(String[] args) throws Exception {
         // Run the test as a standalone application.
-        DLProofTest1 test = new DLProofTest1();
+        DlProofTest1 test = new DlProofTest1();
         test.testDLProofVerification();
         System.out.println("All DL proof tests passed!");
     }

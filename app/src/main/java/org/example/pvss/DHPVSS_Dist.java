@@ -2,6 +2,7 @@ package org.example.pvss;
 
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 import org.bouncycastle.math.ec.ECPoint;
 
@@ -66,19 +67,24 @@ public class DHPVSS_Dist {
             DhKeyPair dk,
             ECPoint S) {
 
+        int n = ctx.getNumParticipants();
         // 1) verify each Eᵢ proof
         for (EphemeralKeyPublic e : epks) {
             try {
+                if (epks.length != n) {
+                    throw new ArrayIndexOutOfBoundsException("There should be exactly n participant public keys");
+                }
                 if (!NizkDlProof.verifyProof(ctx, e.getPublicKey(), e.getProof())) {
                     throw new IllegalArgumentException("Invalid proof for ephemeral key: " + e);
                 }
+
             } catch (NoSuchAlgorithmException ex) {
                 throw new RuntimeException("PRG unavailable", ex);
             }
         }
 
         // extract raw Eᵢ
-        int n = ctx.getNumParticipants();
+
         ECPoint[] E = new ECPoint[n];
         for (int i = 0; i < n; i++) {
             E[i] = epks[i].getPublicKey();
@@ -99,8 +105,10 @@ public class DHPVSS_Dist {
         // hash(pk_D, {Eᵢ}, {Cᵢ}) → poly coeffs of degree ≤ (n−t−2)
         int deg = n - ctx.getThreshold() - 2;
         BigInteger p = ctx.getOrder();
+        int numCoeffs = deg + 1;
         BigInteger[] mStar = HashingTools.hashPointsToPoly(
-                dk.getPublic(), E, C, deg, p);
+                dk.getPublic(), E, C, numCoeffs, p);
+        // System.err.println("mStar = : " + Arrays.toString(mStar));
 
         // evaluate m* at each αᵢ → eᵢ, then rᵢ = vᵢ·eᵢ mod p
         BigInteger[] α = ctx.getAlphas();

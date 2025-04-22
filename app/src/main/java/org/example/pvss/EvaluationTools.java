@@ -74,7 +74,7 @@ public class EvaluationTools {
     public static BigInteger[] evalAll(BigInteger[] c, BigInteger[] α, BigInteger p) {
         BigInteger[] out = new BigInteger[α.length];
         for (int i = 1; i < α.length; i++) {
-            out[i] = evalPolynomial(c, α[i], p);
+            out[i] = evaluatePolynomial(c, α[i], p);
         }
         return out;
     }

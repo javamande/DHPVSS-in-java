@@ -1,6 +1,7 @@
 package org.example.pvss;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 
 import org.bouncycastle.math.ec.ECPoint;
 
@@ -48,6 +49,8 @@ public class DHPVSS_Verify {
                 numCoeffs,
                 p);
 
+        // System.out.println("coeffs = : " + Arrays.toString(coeffs));
+
         // 2) Evaluate at each alpha_i
         BigInteger[] alphas = ctx.getAlphas();
         BigInteger[] evals = new BigInteger[n + 1];
@@ -65,6 +68,10 @@ public class DHPVSS_Verify {
             U = U.add(ephemeral[i - 1].multiply(r)).normalize();
             V = V.add(encrypted[i - 1].multiply(r)).normalize();
         }
+        System.out.println("verify() recomputed U = " + U);
+        System.out.println("verify() recomputed V = " + V);
+        System.out.println("  proof.challenge = " + dleqProof.getChallenge());
+        System.out.println("  proof.response  = " + dleqProof.getResponse());
 
         // 4) Verify DLEQ proof: V = sk_D * U under pkD
         return NizkDlEqProof.verifyProof(ctx, U, pkD, V, dleqProof);

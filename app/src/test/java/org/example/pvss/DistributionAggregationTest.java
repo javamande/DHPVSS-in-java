@@ -13,74 +13,6 @@ import org.junit.Test;
 public class DistributionAggregationTest {
 
     @Test
-    public void testIndividualTermAggregation() {
-        // Use a small prime modulus for dummy testing.
-        BigInteger modulus = new BigInteger("7919");
-        // Get a dummy generator (we assume DummyECPoint.getGenerator(modulus)exists).
-        DummyECPoint G = DummyECPoint.getGenerator(modulus);
-
-        // Set up a controlled scenario with n = 3 participants.
-        int n = 3;
-        // Fixed evaluation points: We assume evaluations are stored in an array where:
-        // evaluations[0] is unused (or reserved for alpha0), and evaluations[1..n] are
-        // for participants.
-        BigInteger[] evaluations = new BigInteger[] {
-                BigInteger.ZERO, // Dummy for alpha0.
-                BigInteger.ONE, // alpha1 = 1.
-                BigInteger.valueOf(2), // alpha2 = 2.
-                BigInteger.valueOf(3) // alpha3 = 3.
-        };
-
-        // Fixed dual‑code coefficients (v) for each participant.
-        BigInteger[] v = new BigInteger[] {
-                new BigInteger("2"), // for participant 1.
-                new BigInteger("3"), // for participant 2.
-                new BigInteger("4") // for participant 3.
-        };
-
-        // Create dummy ephemeral keys and encrypted shares as multiples of G.
-        DummyECPoint[] ephemeralKeys = new DummyECPoint[n];
-        DummyECPoint[] encryptedShares = new DummyECPoint[n];
-        for (int i = 0; i < n; i++) {
-            // For testing, let ephemeralKeys[i] = (i+2)*G.
-            ephemeralKeys[i] = G.multiply(BigInteger.valueOf(i + 2));
-            // And let encryptedShares[i] = (i+10)*G.
-            encryptedShares[i] = G.multiply(BigInteger.valueOf(i + 10));
-        }
-
-        // For each participant, compute the individual aggregation.
-        for (int i = 0; i < n; i++) {
-            // Evaluate at index i+1 from the evaluations array.
-            BigInteger evaluation = evaluations[i + 1];
-            // Compute scalar = evaluation * v[i] mod modulus.
-            BigInteger scalar = evaluation.multiply(v[i]).mod(modulus);
-            // Compute termU = ephemeralKeys[i] * scalar.
-            DummyECPoint termU = ephemeralKeys[i].multiply(scalar);
-            // Compute termV = encryptedShares[i] * scalar.
-            DummyECPoint termV = encryptedShares[i].multiply(scalar);
-
-            // For the purpose of this unit test, the "expected" values are computed using
-            // the same formulas.
-            // (In a real setting you might compute these with independent means or compare
-            // against known constants.)
-            BigInteger expectedScalar = evaluation.multiply(v[i]).mod(modulus);
-            DummyECPoint expectedTermU = ephemeralKeys[i].multiply(expectedScalar);
-            DummyECPoint expectedTermV = encryptedShares[i].multiply(expectedScalar);
-
-            System.out.println("Participant " + (i + 1) + ":");
-            System.out.println(" Evaluation = " + evaluation);
-            System.out.println(" v = " + v[i]);
-            System.out.println(" Scalar = " + scalar);
-            System.out.println(" termU = " + termU);
-            System.out.println(" termV = " + termV);
-
-            // Assert that the computed values match the expected ones.
-            assertEquals("TermU for participant " + (i + 1) + " should be equal", expectedTermU, termU);
-            assertEquals("TermV for participant " + (i + 1) + " should be equal", expectedTermV, termV);
-        }
-    }
-
-    @Test
     public void testAggregateUV_Real() throws Exception {
         // Set up group parameters using secp256r1.
         GroupGenerator.GroupParameters groupParams = GroupGenerator.generateGroup();
@@ -133,7 +65,7 @@ public class DistributionAggregationTest {
                 numPolyCoeffs,
                 modulus);
 
-        polyCoeffs = EvaluationTools.evaluatePolynomialAtAllPoints(polyCoeffs, alphas, modulus);
+        polyCoeffs = EvaluationTools.evalAll(polyCoeffs, alphas, modulus);
         BigInteger[] evaluations = polyCoeffs; // indices: 0 to n (we ignore index 0 later).
 
         ECPoint U = G.getCurve().getInfinity();

@@ -45,7 +45,7 @@ public class EvaluationToolsTest {
                 };
 
                 // Evaluate the polynomial at all points using Horner’s method.
-                BigInteger[] evaluations = EvaluationTools.evaluatePolynomialAtAllPoints(polyCoeffs, xPoints, modulus);
+                BigInteger[] evaluations = EvaluationTools.evalAll(polyCoeffs, xPoints, modulus);
 
                 // Verify the results.
                 assertArrayEquals("Polynomial evaluations should match", expected, evaluations);
@@ -57,8 +57,6 @@ public class EvaluationToolsTest {
                 BigInteger modulus = new BigInteger("7919");
                 // Number of participants.
                 int n = 3;
-                // Number of polynomial coefficients.
-                int numPolyCoeffs = 3;
 
                 // Define evaluation points: we assume an array of length n+1, where index 0 is
                 // unused.
@@ -83,8 +81,8 @@ public class EvaluationToolsTest {
                 };
 
                 // Call the method.
-                BigInteger[] computedTerms = EvaluationTools.generateScrapeSumTerms(modulus, evalPoints, codeCoeffs,
-                                polyCoeffs, n, numPolyCoeffs);
+                BigInteger[] computedTerms = EvaluationTools.computeScrapeWeights(modulus, evalPoints, codeCoeffs,
+                                polyCoeffs, n);
 
                 // Check that the computed terms match the expected ones.
                 assertArrayEquals("The SCRAPE sum terms must match the expected values", expectedTerms, computedTerms);

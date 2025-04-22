@@ -35,8 +35,6 @@ public class DistributionInputGenerator {
 
         // 1) Dealer key‐pair (sk_D, pk_D) ← Gen()
         DhKeyPair dealerKP = DhKeyPair.generate(ctx);
-        ECPoint pk_D = dealerKP.getPublic();
-        BigInteger sk_D = dealerKP.getSecretKey();
 
         // 2) For each i=1..n: generate ephemeral sk_{E,i} and E_i = G·sk_{E,i},
         // then π_i ← NIZK-DL proof that log_G(E_i) = sk_{E,i}.
@@ -44,7 +42,6 @@ public class DistributionInputGenerator {
         for (int i = 0; i < n; i++) {
             DhKeyPair ephKP = DhKeyPair.generate(ctx);
             ECPoint E_i = ephKP.getPublic();
-            BigInteger skE = ephKP.getSecretKey();
 
             // π_i: proof of DL for E_i = G·sk_{E,i}
             NizkDlProof π_i = NizkDlProof.generateProof(ctx, ephKP);

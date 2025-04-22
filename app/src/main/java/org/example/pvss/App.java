@@ -37,8 +37,8 @@ public class App {
 
             // Dealer keypair and secret
             DhKeyPair dealer = DhKeyPair.generate(ctx);
-            BigInteger secretScalar = dealer.getSecretKey().mod(ctx.getOrder());
-            ECPoint S = ctx.getGenerator().multiply(secretScalar);
+            BigInteger secret = new BigInteger(gp.getgroupOrd().bitLength(), rnd);
+            ECPoint S = ctx.getGenerator().multiply(secret);
             System.out.println("Dealer's secret S = " + S);
 
             // 2) Generate ephemeral keypairs + proofs
