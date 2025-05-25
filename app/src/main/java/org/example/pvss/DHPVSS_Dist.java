@@ -107,7 +107,7 @@ public class DHPVSS_Dist {
         BigInteger p = ctx.getOrder();
         int numCoeffs = deg + 1;
         BigInteger[] mStar = HashingTools.hashPointsToPoly(
-                dk.getPublic(), E, C, numCoeffs, p);
+                dk.getPublic(), E, C, numCoeffs, p, ctx);
         // System.err.println("mStar = : " + Arrays.toString(mStar));
 
         // evaluate m* at each αᵢ → eᵢ, then rᵢ = vᵢ·eᵢ mod p

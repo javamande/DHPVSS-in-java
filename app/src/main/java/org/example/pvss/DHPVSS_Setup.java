@@ -38,6 +38,7 @@ public class DHPVSS_Setup {
         for (int i = 0; i <= n; i++) {
             alphas[i] = BigInteger.valueOf(i);
         }
+        BigInteger[] vjs = DhPvssUtils.deriveDkgWeights(alphas, p);
 
         // 3) Precompute inverses for SCRAPE dual‐code formula in range [−(n−1)…(n−1)]
         BigInteger[] invTable = DhPvssUtils.precomputeInverseTable(groupParams, n);
@@ -56,7 +57,7 @@ public class DHPVSS_Setup {
                 t, // threshold
                 n, // total parties
                 alphas, // {α₀…αₙ}
-                vs // {v₁…vₙ}
-        );
+                vs, // {v₁…vₙ}
+                vjs);
     }
 }

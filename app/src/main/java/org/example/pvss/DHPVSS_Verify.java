@@ -47,7 +47,7 @@ public class DHPVSS_Verify {
                 ephemeral,
                 encrypted,
                 numCoeffs,
-                p);
+                p, ctx);
 
         // System.out.println("coeffs = : " + Arrays.toString(coeffs));
 

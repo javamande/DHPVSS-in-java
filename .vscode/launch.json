@@ -1,0 +1,322 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "SetupSmokeTest",
+            "request": "launch",
+            "mainClass": "org.example.pvss.SetupSmokeTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "NapDkgDemo",
+            "request": "launch",
+            "mainClass": "org.example.pvss.NapDkgDemo",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "app.src.main.java.org.example.pvss.App",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "AppDhPVSS",
+            "request": "launch",
+            "mainClass": "app.src.main.java.org.example.pvss.AppDhPVSS",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "NapDkG",
+            "request": "launch",
+            "mainClass": "app.src.main.java.org.example.pvss.NapDkG",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "NapDkgParty",
+            "request": "launch",
+            "mainClass": "app.src.main.java.org.example.pvss.NapDkgParty",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "Round1Prototype",
+            "request": "launch",
+            "mainClass": "app.src.main.java.org.example.pvss.Round1Prototype",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "DhKeyPairGenerationTest",
+            "request": "launch",
+            "mainClass": "app.src.test.java.org.example.pvss.DhKeyPairGenerationTest",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "DhPvssContextTest",
+            "request": "launch",
+            "mainClass": "app.src.test.java.org.example.pvss.DhPvssContextTest",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "DhPvssSetupTest",
+            "request": "launch",
+            "mainClass": "app.src.test.java.org.example.pvss.DhPvssSetupTest",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "DhPvssVerifyTest",
+            "request": "launch",
+            "mainClass": "app.src.test.java.org.example.pvss.DhPvssVerifyTest",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "DistributionAggregationTest",
+            "request": "launch",
+            "mainClass": "app.src.test.java.org.example.pvss.DistributionAggregationTest",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "DistributionInputTest",
+            "request": "launch",
+            "mainClass": "app.src.test.java.org.example.pvss.DistributionInputTest",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "DlProofTest1",
+            "request": "launch",
+            "mainClass": "app.src.test.java.org.example.pvss.DlProofTest1",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "EvaluationToolsTest",
+            "request": "launch",
+            "mainClass": "app.src.test.java.org.example.pvss.EvaluationToolsTest",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "GShamirShareDKGTest",
+            "request": "launch",
+            "mainClass": "app.src.test.java.org.example.pvss.GShamirShareDKGTest",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "GroupGeneratorTest",
+            "request": "launch",
+            "mainClass": "app.src.test.java.org.example.pvss.GroupGeneratorTest",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "HashToPolyTest",
+            "request": "launch",
+            "mainClass": "app.src.test.java.org.example.pvss.HashToPolyTest",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "NizkDlEqProofTest",
+            "request": "launch",
+            "mainClass": "app.src.test.java.org.example.pvss.NizkDlEqProofTest",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "ParticipantKeyPairTest",
+            "request": "launch",
+            "mainClass": "app.src.test.java.org.example.pvss.ParticipantKeyPairTest",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "RoundOneServiceTest",
+            "request": "launch",
+            "mainClass": "app.src.test.java.org.example.pvss.RoundOneServiceTest",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "SSSECTestEC",
+            "request": "launch",
+            "mainClass": "app.src.test.java.org.example.pvss.SSSECTestEC",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "ScrapeCheckTest",
+            "request": "launch",
+            "mainClass": "app.src.test.java.org.example.pvss.ScrapeCheckTest",
+            "projectName": "DHPVSS_4467325c"
+        },
+        {
+            "type": "java",
+            "name": "App(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.App",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "AppDhPVSS(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.AppDhPVSS",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "DhKeyPairGenerationTest(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.DhKeyPairGenerationTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "DhPvssContextTest(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.DhPvssContextTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "DhPvssSetupTest(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.DhPvssSetupTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "DhPvssVerifyTest(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.DhPvssVerifyTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "DistributionAggregationTest(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.DistributionAggregationTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "DistributionInputTest(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.DistributionInputTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "DlProofTest1(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.DlProofTest1",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "EvaluationToolsTest(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.EvaluationToolsTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "GShamirShareDKGTest(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.GShamirShareDKGTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "GroupGeneratorTest(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.GroupGeneratorTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "HashToPolyTest(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.HashToPolyTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "NapDkG(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.NapDkG",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "NapDkgParty(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.NapDkgParty",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "NizkDlEqProofTest(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.NizkDlEqProofTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "ParticipantKeyPairTest(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.ParticipantKeyPairTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "Round1Prototype(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.Round1Prototype",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "RoundOneServiceTest(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.RoundOneServiceTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "SSSECTestEC(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.SSSECTestEC",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "ScrapeCheckTest(1)",
+            "request": "launch",
+            "mainClass": "org.example.pvss.ScrapeCheckTest",
+            "projectName": "app"
+        }
+    ]
+}

@@ -69,8 +69,8 @@ public class NizkDlEqProof {
      */
     public static NizkDlEqProof generateProof(
             DhPvssContext ctx,
-            ECPoint h,
             ECPoint x,
+            ECPoint h,
             ECPoint y,
             BigInteger alpha) {
         BigInteger p = ctx.getOrder();
@@ -80,17 +80,21 @@ public class NizkDlEqProof {
         BigInteger w;
         do {
             w = new BigInteger(p.bitLength(), RNG);
-        } while (w.signum() <= 0 || w.compareTo(p) >= 0);
+        } while (w.signum() == 0 || w.compareTo(p) >= 0);
+
+        // System.out.println(" [DLEQ] w = " + w.toString(16));
 
         // 2) commitments a1 = w·G, a2 = w·h
         ECPoint a1 = G.multiply(w).normalize();
         ECPoint a2 = h.multiply(w).normalize();
+        // System.out.println(" [DLEQ] a1 = " + a1);
+        // System.out.println(" [DLEQ] a2 = " + a2);
 
         // 3) H = Hash(G, x, h, y, a1, a2) mod p
         BigInteger H = HashingTools
                 .hashElements(ctx, G, x, h, y, a1, a2)
                 .mod(p);
-
+        // System.out.println(" [DLEQ] H = " + H.toString(16));
         // 4) challenge e ← PRG(H) in [1, p−1]
         SecureRandom prg;
         try {
@@ -103,9 +107,11 @@ public class NizkDlEqProof {
         do {
             e = new BigInteger(p.bitLength(), prg);
         } while (e.signum() == 0 || e.compareTo(p) >= 0);
+        // System.out.println(" [DLEQ] e = " + e.toString(16));
 
         // 5) z = w − e·α mod p
         BigInteger z = w.subtract(e.multiply(alpha)).mod(p);
+        // System.out.println(" [DLEQ] z = " + z.toString(16));
 
         return new NizkDlEqProof(e, z);
     }
@@ -142,13 +148,15 @@ public class NizkDlEqProof {
 
         // 1) a₁' = z·G + e·x
         ECPoint a1p = G.multiply(z).add(x.multiply(e)).normalize();
+        // System.out.println(" [DLEQ.verify] recomputed a1′ = " + a1p);
         // a₂' = z·h + e·y
         ECPoint a2p = h.multiply(z).add(y.multiply(e)).normalize();
-
+        // System.out.println(" [DLEQ.verify] recomputed a2′ = " + a2p);
         // 2) H' = Hash(G,x,h,y,a₁',a₂') mod p
-        BigInteger H2 = HashingTools
+        BigInteger Hp = HashingTools
                 .hashElements(ctx, G, x, h, y, a1p, a2p)
                 .mod(p);
+        // System.out.println(" [DLEQ.verify] H1′ = " + Hp.toString(16));
 
         // 3) e' ← PRG(H')
         SecureRandom prg;
@@ -157,13 +165,15 @@ public class NizkDlEqProof {
         } catch (NoSuchAlgorithmException ex) {
             throw new RuntimeException("SHA1PRNG unavailable", ex);
         }
-        prg.setSeed(H2.toByteArray());
+        prg.setSeed(Hp.toByteArray());
         BigInteger e2;
         do {
             e2 = new BigInteger(p.bitLength(), prg);
         } while (e2.signum() == 0 || e2.compareTo(p) >= 0);
-
+        // System.out.println(" [DLEQ.verify] e′ recomputed = " + e2);
         // 4) accept iff e2 == e
         return e2.equals(e);
+
     }
+
 }

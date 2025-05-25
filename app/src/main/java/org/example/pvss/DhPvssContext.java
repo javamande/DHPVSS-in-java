@@ -24,18 +24,20 @@ public class DhPvssContext {
     private final int n; // number of participants n
     private final BigInteger[] alphas; // evaluation points α₀ … αₙ
     private final BigInteger[] v; // dual‐code weights v₁ … vₙ
+    private final BigInteger[] vjs; // dual-code weights λ₁…λₙ
 
     public DhPvssContext(
             GroupGenerator.GroupParameters groupParams,
             int t,
             int n,
             BigInteger[] alphas,
-            BigInteger[] v) {
+            BigInteger[] v, BigInteger[] vjs) {
         this.groupParams = groupParams;
         this.t = t;
         this.n = n;
         this.alphas = alphas;
         this.v = v;
+        this.vjs = vjs;
     }
 
     /**
@@ -70,6 +72,10 @@ public class DhPvssContext {
     /** @return {v₁,…,vₙ} — the SCRAPE dual‐code coefficients mod p */
     public BigInteger[] getV() {
         return v;
+    }
+
+    public BigInteger[] getVjs() {
+        return vjs;
     }
 
     /** @return underlying EC group parameters (curve, generator, order, etc.) */

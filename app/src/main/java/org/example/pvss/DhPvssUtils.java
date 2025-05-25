@@ -75,6 +75,38 @@ public class DhPvssUtils {
     }
 
     /**
+     * λ₁…λₙ so that Σ_j λ_j α_j^k = 0 for all 0≤k<n.
+     * 
+     * λ_j = ∏_{ℓ≠j} α_ℓ ← numerator
+     * ───────────────
+     * ∏_{ℓ≠j} (α_ℓ−α_j) ← denominator
+     */
+    public static BigInteger[] deriveDkgWeights(BigInteger[] alphas, BigInteger p) {
+        int n = alphas.length - 1; // alphas[0]=0, alphas[1..n]
+        // 1) totalProd = ∏_{ℓ=1}^{n} α_ℓ
+        BigInteger totalProd = BigInteger.ONE;
+        for (int ℓ = 1; ℓ <= n; ℓ++) {
+            totalProd = totalProd.multiply(alphas[ℓ]).mod(p);
+        }
+
+        BigInteger[] λ = new BigInteger[n];
+        for (int j = 1; j <= n; j++) {
+            // numerator = totalProd / α_j
+            BigInteger num = totalProd.multiply(alphas[j].modInverse(p)).mod(p);
+
+            // denominator = ∏_{ℓ≠j} (α_ℓ − α_j)
+            BigInteger den = BigInteger.ONE;
+            for (int ℓ = 1; ℓ <= n; ℓ++) {
+                if (ℓ == j)
+                    continue;
+                den = den.multiply(alphas[ℓ].subtract(alphas[j])).mod(p);
+            }
+            λ[j - 1] = num.multiply(den.modInverse(p)).mod(p);
+        }
+        return λ;
+    }
+
+    /**
      * Build the extended dual‑code array v′ of length n+1:
      * v′₀ = 1, v′ᵢ = vᵢ for i=1..n.
      *

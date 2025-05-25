@@ -10,30 +10,32 @@ import org.bouncycastle.math.ec.ECPoint;
  * (i.e. proof that E_i is well‑formed).
  */
 public class EphemeralKeyPublic {
-    private final ECPoint E; // Role i’s public key E_i
-    private final NizkDlProof proof; // π: NIZK proof of DLOG_G(E_i)
+    private final int partyIndex;
+    private final ECPoint publicKey;
+    private final NizkDlProof proof;
 
-    public EphemeralKeyPublic(ECPoint E, NizkDlProof proof) {
-        this.E = E;
+    public EphemeralKeyPublic(int partyIndex,
+            ECPoint publicKey,
+            NizkDlProof proof) {
+        this.partyIndex = partyIndex;
+        this.publicKey = publicKey;
         this.proof = proof;
     }
 
-    /**
-     * Returns the ephemeral committee key E_i ∈ 𝔾.
-     */
-    public ECPoint getPublicKey() {
-        return E;
+    public int getPartyIndex() {
+        return partyIndex;
     }
 
-    /**
-     * Returns the non‑interactive proof π that shows E_i = G · skE_i.
-     */
+    public ECPoint getPublicKey() {
+        return publicKey;
+    }
+
     public NizkDlProof getProof() {
         return proof;
     }
 
     @Override
     public String toString() {
-        return "EphemeralKeyPublic { E=" + E + ", π=" + proof + " }";
+        return "EphemeralKeyPublic { E=" + publicKey + ", π=" + proof + " }";
     }
 }

@@ -26,6 +26,18 @@ public class HashingTools {
         }
     }
 
+    public static byte[] hashECPointToBytes(ECPoint point) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] encoded = point.getEncoded(true); // compressed form
+            digest.update(encoded);
+            byte[] hashBytes = digest.digest();
+            return hashBytes;
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not available", e);
+        }
+    }
+
     /**
      * Hashes a sequence of group elements [P₁…P_k]∈𝔾 by concatenating their
      * compressed encodings, then SHA‑256.
@@ -67,21 +79,21 @@ public class HashingTools {
             ECPoint[] comKeys,
             ECPoint[] encryptedShares,
             int numPolyCoeffs,
-            BigInteger modulus) {
+            BigInteger modulus, DhPvssContext ctx) {
         // 1) seed ← H(pk_D ∥ E₁…E_n ∥ C₁…C_n) mod p
         BigInteger listDigest1 = hashECPoint(dealerPub);
         BigInteger listDigest2 = hashECPoints(comKeys);
         BigInteger listDigest3 = hashECPoints(encryptedShares);
 
         // 2) initial coefficient
-        BigInteger initialCoeff = hashBigIntegers(listDigest1, listDigest2, listDigest3)
+        BigInteger initialCoeff = hashBigIntegers(ctx, listDigest1, listDigest2, listDigest3)
                 .mod(modulus);
 
         // 3) extend by hashing previous
         BigInteger[] polyCoeffs = new BigInteger[numPolyCoeffs];
         polyCoeffs[0] = initialCoeff;
         for (int i = 1; i < numPolyCoeffs; i++) {
-            polyCoeffs[i] = hashBigIntegers(polyCoeffs[i - 1]).mod(modulus);
+            polyCoeffs[i] = hashBigIntegers(ctx, polyCoeffs[i - 1]).mod(modulus);
         }
         return polyCoeffs;
     }
@@ -123,11 +135,12 @@ public class HashingTools {
      * @param bns the BigIntegers z₁…z_k
      * @return SHA-256(z₁ … z_k) as nonnegative BigInteger
      */
-    public static BigInteger hashBigIntegers(BigInteger... bns) {
+    public static BigInteger hashBigIntegers(DhPvssContext ctx, BigInteger... bns) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
             // derive a uniform block size from the first input
-            int len = (bns[0].bitLength() + 7) / 8;
+            int len = (ctx.getOrder().bitLength() + 7) / 8;
             for (BigInteger bn : bns) {
                 byte[] chunk = toFixedLength(bn, len);
                 digest.update(chunk);
@@ -170,6 +183,9 @@ public class HashingTools {
             digest.update(encodeECPoint(a1));
             digest.update(encodeECPoint(a2));
             byte[] hash = digest.digest();
+
+            // System.out.println("[hashElements] hash = " + Hex.toHexString(hash));
+
             return new BigInteger(1, hash);
         } catch (NoSuchAlgorithmException ex) {
             throw new RuntimeException("SHA-256 algorithm not available", ex);
@@ -194,5 +210,40 @@ public class HashingTools {
         } catch (NoSuchAlgorithmException ex) {
             throw new RuntimeException("SHA-256 algorithm not available", ex);
         }
+    }
+
+    public static BigInteger[] deriveFirstRoundPoly(
+            DhPvssContext ctx,
+            ECPoint dealerPub, // pki = your E_i
+            ECPoint[] comKeys, // E1…En
+            ECPoint[] encryptedShares, // Ci,1…Ci,n
+            BigInteger[] hatShares, // Ĉi,1…Ĉi,n
+            int n,
+            int t) {
+        BigInteger p = ctx.getOrder();
+
+        // 1) Hash the four chunks into a single seed ∈ Zp
+        BigInteger h0 = hashECPoint(dealerPub);
+        BigInteger h1 = hashECPoints(comKeys);
+        BigInteger h2 = hashECPoints(encryptedShares);
+        BigInteger h3 = hashBigIntegers(ctx, hatShares);
+        // System.out.printf(" h0=%s%n h1=%s%n h2=%s%n h3=%s%n",
+        // h0.toString(16), h1.toString(16), h2.toString(16), h3.toString(16));
+        BigInteger seed = hashBigIntegers(ctx, h0, h1, h2, h3).mod(p);
+        // System.out.println(" seed0=" + seed.toString(16));
+        // 2) Number of coefficients = n - t
+        int coeffs = n - t;
+        BigInteger[] mStar = new BigInteger[coeffs];
+        mStar[0] = BigInteger.ZERO;
+        ;
+
+        if (mStar.length > 1) {
+            mStar[1] = seed; // seed = H( … ) mod p
+            for (int i = 2; i < mStar.length; i++) {
+                mStar[i] = hashBigIntegers(ctx, mStar[i - 1]).mod(p);
+            }
+        }
+        return mStar;
+
     }
 }
