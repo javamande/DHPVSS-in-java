@@ -6,6 +6,132 @@
     "configurations": [
         {
             "type": "java",
+            "name": "SingleChallengeDKGTest",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.cli.SingleChallengeDKGTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "ScrapeTest",
+            "request": "launch",
+            "mainClass": "test.java.org.ScrapeTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "toyexample",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.util.toyexample",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "ScrapeDualCodeCheck",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.util.ScrapeDualCodeCheck",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "TinyScrapeDebug2",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.util.TinyScrapeDebug2",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "SmokeControlledSharingTest",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.cli.SmokeControlledSharingTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "TinyScrapeDebug",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.util.TinyScrapeDebug",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "VerifyScrapeWeights",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.util.VerifyScrapeWeights",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "TinyScrapeTest",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.util.TinyScrapeTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "ToyScrapeTest",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.util.ToyScrapeTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "SmokeTestN3T1",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.cli.SmokeTestN3T1",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "ForcedTrueAggregatorTestR1",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.ForcedTrueAggregatorTestR1",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "ForcedTrueAggregatorTest",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.ForcedTrueAggregatorTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "MiniAggregatorTest",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.MiniAggregatorTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "SmokeTestNew",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.cli.SmokeTestNew",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "SetupSmoke",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.cli.SetupSmoke",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "SetupSmokeTest",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.cli.SetupSmokeTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "SetupSmokeTest",
+            "request": "launch",
+            "mainClass": "org.example.napdkg.SetupSmokeTest",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
             "name": "SetupSmokeTest",
             "request": "launch",
             "mainClass": "org.example.pvss.SetupSmokeTest",

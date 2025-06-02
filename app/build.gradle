@@ -5,50 +5,82 @@
  * For more details on building Java & JVM projects, please refer to https://docs.gradle.org/8.13/userguide/building_java_projects.html in the Gradle documentation.
  * This project uses @Incubating APIs which are subject to change.
  */
-
 plugins {
-    // Apply the application plugin to add support for building a CLI application in Java.
-    id 'application'
     id 'java'
+    //
+    // Replace 0.6.6 with 0.6.8 (a version that actually exists on the Gradle Plugin Portal).
+    //
+    id 'me.champeau.jmh' version '0.6.8'
+    id 'application'
 }
 
 repositories {
-    // Use Maven Central for resolving dependencies.
     mavenCentral()
+    // (the second repositories block from below has been merged into this one)
 }
-
 
 dependencies {
     // BouncyCastle provider for ECPoint, etc.
-    implementation 'org.bouncycastle:bcprov-jdk15on:1.70'
+    implementation "org.bouncycastle:bcprov-jdk15on:1.70"
+    // JSON (Gson), logging, etc.
+    implementation "com.google.code.gson:gson:2.10.1"
+    implementation "org.slf4j:slf4j-api:2.0.7"
+    runtimeOnly   "ch.qos.logback:logback-classic:1.5.11"
 
-    // JSON, testing, etc.
-    implementation 'com.google.code.gson:gson:2.10.1'
+    // JUnit (note: your original test block had both JUnit4 and JUnit Jupiter; I’ve kept JUnit4 for ’testImplementation’ here
     testImplementation 'junit:junit:4.13.2'
+    // If you prefer JUnit 5, you can uncomment the following two lines instead of the JUnit4 line above:
+    // testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
+    // testRuntimeOnly   'org.junit.jupiter:junit-jupiter-engine:5.9.0'
 
-   // SLF4J API: the logging facade called
-  implementation "org.slf4j:slf4j-api:2.0.7"
-
-  // Logback classic: the concrete SLF4J binding that actually writes logs to console/files
-  runtimeOnly   "ch.qos.logback:logback-classic:1.5.11"
+    //
+    // JMH dependencies must be declared under the special ‘jmh’ configuration.
+    // This was near the bottom of your original file:
+    //
+    jmh 'org.openjdk.jmh:jmh-core:1.36'
+    jmh 'org.openjdk.jmh:jmh-generator-annprocess:1.36'
 }
 
-sourceSets {
-    main {
-        java {
-            srcDirs = ['src/main/java']
-        }
-    }
-    test {
-        java {
-            srcDirs = ['src/test/java']
-        }
-        // Ensure main output is included in the test classpath:
-        compileClasspath += sourceSets.main.output
-    }
+sourceCompatibility = '17'
+targetCompatibility = '17'
+
+jmh {
+    // Write results as a JSON file
+    resultFormat         = 'JSON'
+    resultsFile          = file("$buildDir/logs/benchmarks.json")
+
+    // Only include our SetupBenchmark class
+   includes              = ['.*SetupBenchmark.*', '.*SharingBenchmark.*', '.*VerificationBenchmark.*', '.*ThresholdBenchmark.*']
+
+    // We want one fork
+   fork                  = 1
+    warmupIterations      = 1
+    benchmarkMode         = ['Throughput']
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// The following “apply plugin” was in your original file. It is no longer
+// necessary because we already used the “plugins { … }” DSL above. If you
+// delete it, the build still works; I’ve commented it out so you can see it.
+// ────────────────────────────────────────────────────────────────────────────
+// apply plugin: 'me.champeau.jmh'
+// ────────────────────────────────────────────────────────────────────────────
 
+
+
+
+
+
+// ────────────────────────────────────────────────────────────────────────────
+// Your second “repositories { mavenCentral() }” block has been merged above.
+// ────────────────────────────────────────────────────────────────────────────
+// repositories {
+//      mavenCentral()
+// }
+
+// ────────────────────────────────────────────────────────────────────────────
+// The “testing { … }” suite‐declaration you had is valid, so we keep it.
+// ────────────────────────────────────────────────────────────────────────────
 testing {
     suites {
         // Configure the built-in test suite
@@ -59,14 +91,27 @@ testing {
     }
 }
 
-// Apply a specific Java toolchain to ease working on different environments.
+// Apply a specific Java toolchain (you had two identical java { toolchain { … } } blocks).
+// I’ve merged them into one block targeting Java 17.
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
 
 application {
-  // your demo’s main class:
+    // your demo’s main class:
     mainClass = 'org.example.pvss.NapDkgDemo'
+}
+
+tasks.withType(Test).configureEach {
+    javaLauncher.set(
+        javaToolchains.launcherFor {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    )
+}
+
+jar {
+    from sourceSets.main.output
 }
