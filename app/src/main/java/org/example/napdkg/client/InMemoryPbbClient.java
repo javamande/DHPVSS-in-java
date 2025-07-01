@@ -18,12 +18,27 @@ import java.util.concurrent.ConcurrentHashMap;
  * exactly what testDeleteThrows expects.
  */
 public class InMemoryPbbClient implements PbbClient {
+    private int latencyMs = 0;
+
+    public void setLatency(int ms) {
+        this.latencyMs = ms;
+    }
+
+    private void maybeSleep() {
+        if (latencyMs > 0) {
+            try {
+                Thread.sleep(latencyMs);
+            } catch (InterruptedException e) {
+            }
+        }
+    }
 
     // topicName → (id → dto)
     private final Map<String, Map<String, Object>> storage = new ConcurrentHashMap<>();
 
     @Override
     public <T> List<T> fetch(String topic, Class<T> clazz) {
+        maybeSleep();
         Map<String, Object> topicMap = storage.get(topic);
         if (topicMap == null) {
             // return a new, mutable empty list (not Collections.emptyList())
@@ -40,6 +55,7 @@ public class InMemoryPbbClient implements PbbClient {
 
     @Override
     public void publish(String topic, Object dto) {
+        maybeSleep();
         // ensure there is a map for this topic
         Map<String, Object> topicMap = storage.computeIfAbsent(topic,
                 k -> new ConcurrentHashMap<>());
@@ -64,6 +80,7 @@ public class InMemoryPbbClient implements PbbClient {
 
     @Override
     public void delete(String topic, String id) {
+        maybeSleep();
         Map<String, Object> topicMap = storage.get(topic);
         // If topic is missing or id is not present, throw IllegalArgumentException
         if (topicMap == null || !topicMap.containsKey(id)) {
